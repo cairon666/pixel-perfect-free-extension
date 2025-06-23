@@ -1,0 +1,33 @@
+# Build outputs
+dist/
+build/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Generated files
+*.min.js
+*.min.css
+
+# Logs
+*.log
+
+# Chrome extension files
+*.crx
+*.pem
+
+# Temporary files
+.DS_Store
+.env*
+
+# Generated TypeScript declaration files
+*.d.ts
+
+# Vite build cache
+vite.config.ts.timestamp-* 
