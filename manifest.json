@@ -2,11 +2,18 @@
   "manifest_version": 3,
   "name": "Pixel Perfect",
   "description": "Real-time pixel-perfect interface checker for developers.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Pixel Perfect Extension Team",
   "homepage_url": "https://github.com/cairon666/pixel-perfect-free-extension",
-  "permissions": ["activeTab", "clipboardRead", "scripting", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "activeTab",
+    "clipboardRead",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
     "default_title": "Pixel Perfect"
   },
@@ -22,8 +29,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["src/content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
