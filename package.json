@@ -1,12 +1,12 @@
 {
   "name": "pixel-perfect-free-extension",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "license": "MIT",
   "author": "Pixel Perfect Extension Team",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/pixel-perfect-free-extension.git"
+    "url": "https://github.com/cairon666/pixel-perfect-free-extension.git"
   },
   "keywords": [
     "browser-extension",
