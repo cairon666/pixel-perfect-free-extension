@@ -21,7 +21,7 @@
 
 ```bash
 # Клонируйте репозиторий
-git clone https://github.com/your-username/pixel-perfect-free-extension.git
+git clone https://github.com/cairon666/pixel-perfect-free-extension.git
 cd pixel-perfect-free-extension
 
 # Установите зависимости
