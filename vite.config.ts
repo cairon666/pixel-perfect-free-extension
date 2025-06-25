@@ -17,6 +17,7 @@ export default defineConfig(() => {
   const isContentBuild = process.env.BUILD_TARGET === 'content';
 
   const isAnalyze = process.env.ANALYZE === 'true';
+  const isMinify = process.env.MINIFY ? process.env.MINIFY === 'true' : true;
 
   if (isContentBuild) {
     // Build configuration for content script only
@@ -32,6 +33,7 @@ export default defineConfig(() => {
       ],
       resolve: {
         alias: {
+          src: resolve(__dirname, 'src'),
           // Use lightweight Preact for content script
           react: 'preact/compat',
           'react-dom': 'preact/compat',
@@ -43,6 +45,7 @@ export default defineConfig(() => {
         global: 'globalThis',
       },
       build: {
+        minify: isMinify,
         target: 'es2020',
         outDir: 'dist',
         emptyOutDir: false,

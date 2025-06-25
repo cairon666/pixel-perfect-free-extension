@@ -1,0 +1,226 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Триггер на семантические версии (v1.0.0, v2.1.3, etc.)
+
+jobs:
+  # Создание релиза
+  release:
+    name: 🚀 Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Нужно для генерации changelog
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Verify version consistency
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PACKAGE_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "❌ Version mismatch: package.json ($PACKAGE_VERSION) != tag (${{ steps.version.outputs.version }})"
+            exit 1
+          fi
+          echo "✅ Version consistency verified: $PACKAGE_VERSION"
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build production
+        run: npm run build
+
+      - name: Run security audit
+        run: npm audit --audit-level=high
+
+      - name: Create release package
+        run: |
+          cd dist
+          zip -r ../pixel-perfect-extension-${{ steps.version.outputs.tag }}.zip ./*
+          cd ..
+
+          # Создание архива с исходным кодом для Chrome Web Store
+          zip -r pixel-perfect-extension-source-${{ steps.version.outputs.tag }}.zip \
+            src/ public/ *.json *.js *.ts *.md \
+            --exclude="*.log" --exclude="node_modules/*" --exclude="dist/*"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Простая генерация changelog из коммитов между тегами
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | sed -n '2p')
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "## 🎉 Что нового в версии ${{ steps.version.outputs.tag }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          # Группировка коммитов по типам
+          echo "### ✨ Новые функции" >> RELEASE_NOTES.md
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --grep="^feat" >> RELEASE_NOTES.md || echo "- Нет новых функций" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 🐛 Исправления ошибок" >> RELEASE_NOTES.md
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --grep="^fix" >> RELEASE_NOTES.md || echo "- Нет исправлений" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 🔧 Улучшения" >> RELEASE_NOTES.md
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --grep="^improve\|^refactor\|^perf" >> RELEASE_NOTES.md || echo "- Нет улучшений" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 📚 Документация" >> RELEASE_NOTES.md
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --grep="^docs" >> RELEASE_NOTES.md || echo "- Нет изменений в документации" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 🔒 Безопасность" >> RELEASE_NOTES.md
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s" --grep="^security" >> RELEASE_NOTES.md || echo "- Нет изменений безопасности" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 📦 Техническая информация" >> RELEASE_NOTES.md
+          echo "- **Размер расширения**: $(du -h pixel-perfect-extension-${{ steps.version.outputs.tag }}.zip | cut -f1)" >> RELEASE_NOTES.md
+          echo "- **Поддерживаемые браузеры**: Chrome 88+, Edge 88+" >> RELEASE_NOTES.md
+          echo "- **Версия Node.js для сборки**: $(node --version)" >> RELEASE_NOTES.md
+          echo "- **Дата сборки**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "### 📥 Установка" >> RELEASE_NOTES.md
+          echo "1. Скачайте \`pixel-perfect-extension-${{ steps.version.outputs.tag }}.zip\`" >> RELEASE_NOTES.md
+          echo "2. Распакуйте архив" >> RELEASE_NOTES.md
+          echo "3. Откройте Chrome: \`chrome://extensions/\`" >> RELEASE_NOTES.md
+          echo "4. Включите \"Режим разработчика\"" >> RELEASE_NOTES.md
+          echo "5. Нажмите \"Загрузить распакованное расширение\"" >> RELEASE_NOTES.md
+          echo "6. Выберите распакованную папку" >> RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: 'Pixel Perfect ${{ steps.version.outputs.tag }}'
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          files: |
+            pixel-perfect-extension-${{ steps.version.outputs.tag }}.zip
+            pixel-perfect-extension-source-${{ steps.version.outputs.tag }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ steps.version.outputs.tag }}
+          path: |
+            pixel-perfect-extension-${{ steps.version.outputs.tag }}.zip
+            pixel-perfect-extension-source-${{ steps.version.outputs.tag }}.zip
+            RELEASE_NOTES.md
+          retention-days: 90
+
+  # Создание Pull Request для обновления версии (для следующего релиза)
+  version-bump:
+    name: 📈 Prepare Next Version
+    runs-on: ubuntu-latest
+    needs: release
+    if: success()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Extract current version
+        id: current_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Calculate next version
+        id: next_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.version }}"
+
+          # Увеличиваем patch версию для следующего релиза
+          IFS='.' read -ra ADDR <<< "$CURRENT"
+          MAJOR=${ADDR[0]}
+          MINOR=${ADDR[1]}
+          PATCH=${ADDR[2]}
+
+          NEXT_PATCH=$((PATCH + 1))
+          NEXT_VERSION="$MAJOR.$MINOR.$NEXT_PATCH"
+
+          echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create version bump branch
+        run: |
+          git checkout -b release/prepare-v${{ steps.next_version.outputs.next_version }}
+
+      - name: Update package.json version
+        run: |
+          npm version ${{ steps.next_version.outputs.next_version }} --no-git-tag-version
+
+      - name: Update manifest.json version
+        run: |
+          jq --arg version "${{ steps.next_version.outputs.next_version }}" \
+             '.version = $version' \
+             manifest.json > manifest.tmp.json
+          mv manifest.tmp.json manifest.json
+
+      - name: Commit changes
+        run: |
+          git add package.json package-lock.json manifest.json
+          git commit -m "chore: bump version to ${{ steps.next_version.outputs.next_version }}"
+          git push origin release/prepare-v${{ steps.next_version.outputs.next_version }}
+
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: 'release/prepare-v${{ steps.next_version.outputs.next_version }}'
+          destination_branch: 'main'
+          pr_title: '🔄 Prepare version ${{ steps.next_version.outputs.next_version }}'
+          pr_body: |
+            ## 🚀 Подготовка к следующему релизу
+
+            Этот PR автоматически создан после релиза версии ${{ steps.current_version.outputs.version }}.
+
+            ### Изменения:
+            - ⬆️ Версия в `package.json`: `${{ steps.next_version.outputs.next_version }}`
+            - ⬆️ Версия в `manifest.json`: `${{ steps.next_version.outputs.next_version }}`
+
+            ### Следующие шаги:
+            1. Просмотрите изменения
+            2. При необходимости добавьте дополнительные изменения
+            3. Merge этот PR
+            4. Начинайте разработку новых функций!
+
+            > 🤖 Создано автоматически GitHub Action
+          github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,91 +1,190 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { useAtom, useAction } from '@reatom/npm-react';
 
-import { PixelPerfectOverlay } from './PixelPerfectOverlay';
+import { PixelPerfectOverlay } from './components/PixelPerfectOverlay';
+import { MainMenu } from './components/MainMenu';
+import { 
+  imageSrcAtom, 
+  activeImageIdAtom,
+  isVisibleAtom, 
+  savedPositionAtom, 
+  savedSizeAtom,
+  isMainMenuVisibleAtom,
+  isImagePanelVisibleAtom,
+  opacityAtom,
+  isLockedAtom,
+  isDiffModeAtom,
+  isCenteredAtom,
+  overlayPositionAtom,
+  overlayScaleAtom,
+  showOverlay,
+  hideOverlay,
+  closeMainMenu,
+  toggleMainMenu,
+  toggleImagePanel,
+  toggleOpacity,
+  toggleLock,
+  toggleDiff,
+  toggleCenter,
+  moveOverlay,
+  setOpacity,
+  setOverlayPosition,
+  setOverlayScale,
+  updateImageState,
+  MoveDirection
+} from '../store';
 
 export function PixelPerfectApp() {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [savedPosition, setSavedPosition] = useState<{ x: number; y: number } | undefined>();
-  const [savedSize, setSavedSize] = useState<{ width: number; height: number } | undefined>();
+  // Используем Reatom атомы вместо useState
+  const [imageSrc] = useAtom(imageSrcAtom);
+  const [activeImageId] = useAtom(activeImageIdAtom);
+  const [isVisible] = useAtom(isVisibleAtom);
+  const [savedPosition] = useAtom(savedPositionAtom);
+  const [savedSize] = useAtom(savedSizeAtom);
+  const [isImagePanelVisible] = useAtom(isImagePanelVisibleAtom);
+  const [isMainMenuVisible] = useAtom(isMainMenuVisibleAtom);
+  
+  // Состояние для overlay параметров
+  const [opacity] = useAtom(opacityAtom);
+  const [isLocked] = useAtom(isLockedAtom);
+  const [isDiffMode] = useAtom(isDiffModeAtom);
+  const [isCentered] = useAtom(isCenteredAtom);
+  const [overlayPosition] = useAtom(overlayPositionAtom);
+  const [overlayScale] = useAtom(overlayScaleAtom);
+  
+  // Используем Reatom actions
+  const showOverlayAction = useAction(showOverlay);
+  const hideOverlayAction = useAction(hideOverlay);
+  const closeMainMenuAction = useAction(closeMainMenu);
+  const toggleMainMenuAction = useAction(toggleMainMenu);
+  const toggleImagePanelAction = useAction(toggleImagePanel);
+  const toggleOpacityAction = useAction(toggleOpacity);
+  const toggleLockAction = useAction(toggleLock);
+  const toggleDiffAction = useAction(toggleDiff);
+  const toggleCenterAction = useAction(toggleCenter);
+  const moveOverlayAction = useAction(moveOverlay);
+  const setOpacityAction = useAction(setOpacity);
+  const setOverlayPositionAction = useAction(setOverlayPosition);
+  const setOverlayScaleAction = useAction(setOverlayScale);
+  const updateImageStateAction = useAction(updateImageState);
 
-  // Handle paste events for image upload
-  const handlePasteEvent = useCallback(async (event: ClipboardEvent) => {
-    const clipboardItems = event.clipboardData?.items;
-    if (!clipboardItems) return;
+  // Удаляем старые обработчики событий, так как теперь используется Reatom
 
-    Array.from(clipboardItems).some(item => {
-      if (item.type.startsWith('image/')) {
-        const file = item.getAsFile();
-        if (!file) return false;
-        const url = URL.createObjectURL(file);
-        setImageSrc(url);
-        setIsVisible(true);
-        event.preventDefault();
-        return true;
-      }
-      return false;
-    });
-  }, []);
 
-  // Handle events from global message handler
-  useEffect(() => {
-    const handleShowOverlay = (event: CustomEvent) => {
-      const { src, position, size } = event.detail;
-
-      if (src) {
-        // Сначала устанавливаем сохранённые позицию и размер
-        setSavedPosition(position);
-        setSavedSize(size);
-
-        // Затем показываем overlay с уже установленными значениями
-        setImageSrc(src);
-        setIsVisible(true);
-      }
-    };
-
-    const handleHideOverlay = () => {
-      setIsVisible(false);
-      setImageSrc(null);
-      setSavedPosition(undefined);
-      setSavedSize(undefined);
-    };
-
-    window.addEventListener('pixelPerfectShowOverlay', handleShowOverlay as EventListener);
-    window.addEventListener('pixelPerfectHideOverlay', handleHideOverlay);
-
-    return () => {
-      window.removeEventListener('pixelPerfectShowOverlay', handleShowOverlay as EventListener);
-      window.removeEventListener('pixelPerfectHideOverlay', handleHideOverlay);
-    };
-  }, []);
-
-  // Add paste event listener
-  useEffect(() => {
-    window.addEventListener('paste', handlePasteEvent, true);
-
-    return () => {
-      window.removeEventListener('paste', handlePasteEvent, true);
-    };
-  }, [handlePasteEvent]);
 
   // Handle overlay close
   const handleClose = useCallback(() => {
-    setIsVisible(false);
-    setImageSrc(null);
-    setSavedPosition(undefined);
-    setSavedSize(undefined);
-  }, []);
+    closeMainMenuAction();
+  }, [closeMainMenuAction]);
 
-  if (!isVisible || !imageSrc) {
-    return null;
-  }
+  // Handle main menu close  
+  const handleMainMenuClose = useCallback(() => {
+    closeMainMenuAction();
+  }, [closeMainMenuAction]);
+
+  // Handle image panel toggle
+  const handleToggleImagePanel = useCallback(() => {
+    toggleImagePanelAction();
+  }, [toggleImagePanelAction]);
+
+
+
+  // Handle image selection from panel
+  const handleImageSelect = useCallback((dataUrl: string, imageId: string, position?: { x: number; y: number }, size?: { width: number; height: number }) => {
+    showOverlayAction(dataUrl, imageId, position, size);
+  }, [showOverlayAction]);
+
+  // Handle overlay parameter changes
+  const handleToggleOpacity = useCallback(() => {
+    toggleOpacityAction();
+  }, [toggleOpacityAction]);
+
+  const handleToggleLock = useCallback(() => {
+    toggleLockAction();
+  }, [toggleLockAction]);
+
+  const handleToggleDiff = useCallback(() => {
+    toggleDiffAction();
+  }, [toggleDiffAction]);
+
+  const handleToggleCenter = useCallback(() => {
+    toggleCenterAction();
+  }, [toggleCenterAction]);
+
+  const handlePositionChange = useCallback((newPosition: { x: number; y: number }) => {
+    setOverlayPositionAction(newPosition);
+  }, [setOverlayPositionAction]);
+
+  const handleScaleChange = useCallback((newScale: number) => {
+    setOverlayScaleAction(newScale);
+  }, [setOverlayScaleAction]);
+
+  // Handle move overlay
+  const handleMoveOverlay = useCallback((direction: MoveDirection) => {
+    moveOverlayAction(direction);
+  }, [moveOverlayAction]);
+
+  // Handle image state update for persistence
+  const handleImageStateUpdate = useCallback((position: { x: number; y: number }, size: { width: number; height: number }) => {
+    if (activeImageId && position && size) {
+      updateImageStateAction(activeImageId, position, size);
+      
+      // Также сохраняем в chrome.storage для совместимости с popup
+      if (typeof chrome !== 'undefined' && chrome.runtime) {
+        chrome.runtime.sendMessage({
+          action: 'updateImageState',
+          imageId: activeImageId,
+          position,
+          size,
+        }).catch(() => {
+          // Ignore messaging errors
+        });
+      }
+    }
+  }, [updateImageStateAction, activeImageId]);
 
   return (
-    <PixelPerfectOverlay
-      imageSrc={imageSrc}
-      onClose={handleClose}
-      initialPosition={savedPosition}
-      initialSize={savedSize}
-    />
+    <>
+      <MainMenu
+        isVisible={isMainMenuVisible}
+        onClose={handleMainMenuClose}
+        onToggleImagePanel={handleToggleImagePanel}
+        onToggleOpacity={handleToggleOpacity}
+        onToggleLock={handleToggleLock}
+        onToggleDiff={handleToggleDiff}
+        isImagePanelVisible={isImagePanelVisible}
+        opacity={opacity}
+        onOpacityChange={(value: number) => setOpacityAction(value)}
+        isLocked={isLocked}
+        isDiffMode={isDiffMode}
+        isCentered={isCentered}
+        onToggleCenter={handleToggleCenter}
+        onMove={isVisible ? handleMoveOverlay : undefined}
+        onImageSelect={handleImageSelect}
+        position={isVisible ? overlayPosition : undefined}
+        scale={isVisible ? overlayScale : undefined}
+        onPositionChange={isVisible ? handlePositionChange : undefined}
+        onScaleChange={isVisible ? handleScaleChange : undefined}
+      />
+
+      {isVisible && imageSrc && (
+        <PixelPerfectOverlay
+          imageSrc={imageSrc}
+          onClose={handleClose}
+          initialPosition={savedPosition}
+          initialSize={savedSize}
+          opacity={opacity}
+          onOpacityChange={(value: number) => setOpacityAction(value)}
+          isLocked={isLocked}
+          isDiffMode={isDiffMode}
+          isCentered={isCentered}
+          position={overlayPosition}
+          scale={overlayScale}
+          onPositionChange={handlePositionChange}
+          onScaleChange={handleScaleChange}
+          onImageStateUpdate={handleImageStateUpdate}
+        />
+      )}
+    </>
   );
 }

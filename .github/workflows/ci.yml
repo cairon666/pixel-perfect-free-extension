@@ -1,0 +1,254 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # Линтинг и проверка форматирования
+  lint:
+    name: 🔍 Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npm run format:check
+
+      - name: TypeScript check
+        run: npm run tsc
+
+  # Тестирование
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # Сборка проекта
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    strategy:
+      matrix:
+        build-mode: [production, development]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production
+        if: matrix.build-mode == 'production'
+        run: npm run build
+
+      - name: Build development
+        if: matrix.build-mode == 'development'
+        run: npm run build:dev
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-${{ matrix.build-mode }}
+          path: dist/
+          retention-days: 7
+
+      - name: Generate bundle analysis
+        if: matrix.build-mode == 'production'
+        run: npm run analyze
+
+      - name: Upload bundle analysis
+        if: matrix.build-mode == 'production'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: |
+            dist/popup-bundle-analysis.html
+            dist/content-bundle-analysis.html
+          retention-days: 7
+
+  # Проверка безопасности
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=high
+
+      - name: Check for vulnerable dependencies
+        run: npm audit --audit-level=moderate --dry-run
+
+  # Проверка совместимости с разными версиями Node.js
+  compatibility:
+    name: 🔄 Node.js Compatibility
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['16', '18', '20']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+  # Создание архива для релиза
+  package:
+    name: 📦 Package Extension
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-production
+          path: dist/
+
+      - name: Create version info
+        run: |
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+          echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Add build info to manifest
+        run: |
+          jq --arg version "$VERSION" --arg build_date "$BUILD_DATE" --arg commit "$COMMIT_SHA" \
+             '. + {build_info: {version: $version, build_date: $build_date, commit: $commit}}' \
+             dist/manifest.json > dist/manifest.tmp.json
+          mv dist/manifest.tmp.json dist/manifest.json
+
+      - name: Create extension archive
+        run: |
+          cd dist
+          zip -r ../pixel-perfect-extension-v${{ env.VERSION }}.zip ./*
+
+      - name: Upload release package
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixel-perfect-extension-v${{ env.VERSION }}
+          path: pixel-perfect-extension-v${{ env.VERSION }}.zip
+          retention-days: 30
+
+  # Проверка качества кода
+  code-quality:
+    name: 📊 Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build for analysis
+        run: npm run build
+
+      - name: Calculate project stats
+        run: |
+          echo "## 📊 Project Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Lines of Code | $(find src -name '*.ts' -o -name '*.tsx' | xargs wc -l | tail -1 | awk '{print $1}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript Files | $(find src -name '*.ts' -o -name '*.tsx' | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| React Components | $(find src -name '*.tsx' | wc -l) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Bundle Size (estimated) | $(du -h dist/assets/*.js 2>/dev/null | awk '{sum+=$1} END {print sum "K"}' || echo "N/A") |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check bundle size
+        run: |
+          BUNDLE_SIZE=$(find dist/assets -name "*.js" -exec stat -c%s {} \; | awk '{sum+=$1} END {print sum}')
+          echo "Bundle size: $BUNDLE_SIZE bytes"
+          if [ "$BUNDLE_SIZE" -gt 2097152 ]; then  # 2MB limit
+            echo "⚠️ Warning: Bundle size exceeds 2MB limit"
+            exit 1
+          fi
+
+  # Уведомление о результатах
+  notify:
+    name: 📢 Notify Results
+    runs-on: ubuntu-latest
+    needs: [lint, test, build, security, package]
+    if: always() && github.ref == 'refs/heads/main'
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.lint.result }}" == "failure" || 
+                "${{ needs.test.result }}" == "failure" || 
+                "${{ needs.build.result }}" == "failure" || 
+                "${{ needs.security.result }}" == "failure" ]]; then
+            echo "❌ CI Pipeline Failed"
+            echo "Some jobs have failed. Please check the logs."
+            exit 1
+          else
+            echo "✅ CI Pipeline Successful"
+            echo "All checks passed successfully!"
+          fi

@@ -1,0 +1,159 @@
+name: ✨ Запрос новой функции
+description: Предложить новую функцию или улучшение
+title: '[Feature]: '
+labels: ['enhancement', 'triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за предложение! Ваши идеи помогают сделать Pixel Perfect лучше.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Предварительная проверка
+      description: Убедитесь, что вы выполнили следующие шаги
+      options:
+        - label: Я проверил существующие issues и feature requests
+          required: true
+        - label: Я проверил roadmap проекта
+          required: true
+        - label: Эта функция еще не реализована
+          required: true
+
+  - type: textarea
+    id: problem-description
+    attributes:
+      label: Проблема, которую решает функция
+      description: Какую проблему или потребность решает предлагаемая функция?
+      placeholder: |
+        Опишите проблему или ситуацию, в которой эта функция была бы полезна.
+        Например: "При работе с адаптивными макетами сложно..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Предлагаемое решение
+      description: Как должна работать новая функция?
+      placeholder: |
+        Детально опишите, как должна работать функция:
+        - Как пользователь будет с ней взаимодействовать?
+        - Где она будет располагаться в интерфейсе?
+        - Какие настройки должны быть доступны?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Тип функции
+      description: К какой категории относится предложение?
+      options:
+        - UI/UX улучшение
+        - Новая функциональность
+        - Интеграция с внешними сервисами
+        - Производительность
+        - Доступность (accessibility)
+        - Настройки и конфигурация
+        - Горячие клавиши
+        - Автоматизация
+        - Другое
+    validations:
+      required: true
+
+  - type: dropdown
+    id: user-type
+    attributes:
+      label: Целевая аудитория
+      description: Для каких пользователей в первую очередь эта функция?
+      options:
+        - Начинающие веб-разработчики
+        - Опытные frontend-разработчики
+        - UI/UX дизайнеры
+        - QA инженеры
+        - Все пользователи
+      default: 4
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Сценарии использования
+      description: Приведите конкретные примеры использования
+      placeholder: |
+        Опишите 2-3 конкретных сценария:
+
+        1. Сценарий 1: При верстке мобильной версии...
+        2. Сценарий 2: При работе с компонентной библиотекой...
+        3. Сценарий 3: При командной разработке...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативные решения
+      description: Рассматривались ли другие способы решения проблемы?
+      placeholder: |
+        - Можно ли решить проблему существующими функциями?
+        - Есть ли другие инструменты, которые решают эту задачу?
+        - Какие альтернативные подходы возможны?
+
+  - type: checkboxes
+    id: implementation-help
+    attributes:
+      label: Готовность помочь с реализацией
+      description: Готовы ли вы помочь с разработкой?
+      options:
+        - label: Я могу помочь с дизайном UI/UX
+        - label: Я могу помочь с программированием
+        - label: Я могу помочь с тестированием
+        - label: Я могу помочь с документацией
+        - label: Я могу помочь только отзывами и предложениями
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Приоритет
+      description: Насколько важна эта функция для вашей работы?
+      options:
+        - Низкий - было бы неплохо иметь
+        - Средний - заметно улучшит процесс работы
+        - Высокий - значительно повысит продуктивность
+        - Критический - блокирует эффективную работу
+      default: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Мокапы/Эскизы
+      description: Есть ли у вас визуальные представления функции?
+      placeholder: |
+        Прикрепите изображения, ссылки на Figma, или просто текстовое описание UI...
+
+  - type: textarea
+    id: technical-considerations
+    attributes:
+      label: Технические соображения
+      description: Есть ли технические аспекты, которые стоит учесть?
+      placeholder: |
+        - Совместимость с браузерами
+        - Производительность
+        - Безопасность
+        - Сложность реализации
+        - Влияние на существующий функционал
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Дополнительная информация
+      description: Любая другая информация о запрашиваемой функции
+      placeholder: |
+        - Ссылки на похожие решения в других инструментах
+        - Обратная связь от других пользователей
+        - Статистика использования связанных функций

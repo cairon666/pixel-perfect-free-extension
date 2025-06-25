@@ -4,6 +4,8 @@ export enum ActionsEnum {
   PONG = 'pong',
   SHOW_OVERLAY = 'showOverlay',
   HIDE_OVERLAY = 'hideOverlay',
+  OPEN_IMAGE_PANEL = 'openImagePanel',
+  TOGGLE_MAIN_MENU = 'toggleMainMenu',
   SUCCESS = 'success',
   UNKNOWN_ACTION = 'unknown_action',
 }

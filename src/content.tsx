@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom/client';
 
 import { ActionsEnum } from './consts';
 import { PixelPerfectApp } from './content/PixelPerfectApp';
+import { ReatomProvider, ctx, showOverlay, hideOverlay, setMainMenuVisible, toggleMainMenu } from './store';
 import tailwindStyles from './styles/globals.css?inline';
 
 let root: ReactDOM.Root | null = null;
@@ -16,24 +17,24 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
         return true;
 
       case ActionsEnum.SHOW_OVERLAY:
-        if (request.src) {
-          // Отправляем событие в React компонент
-          window.dispatchEvent(
-            new CustomEvent('pixelPerfectShowOverlay', {
-              detail: {
-                src: request.src,
-                position: request.position,
-                size: request.size,
-              },
-            })
-          );
+        if (request.src && request.imageId) {
+          showOverlay(ctx, request.src, request.imageId, request.position, request.size);
         }
         sendResponse({ status: ActionsEnum.SUCCESS });
         return true;
 
       case ActionsEnum.HIDE_OVERLAY:
-        // Отправляем событие в React компонент
-        window.dispatchEvent(new CustomEvent('pixelPerfectHideOverlay'));
+        hideOverlay(ctx);
+        sendResponse({ status: ActionsEnum.SUCCESS });
+        return true;
+
+      case ActionsEnum.OPEN_IMAGE_PANEL:
+        setMainMenuVisible(ctx, true);
+        sendResponse({ status: ActionsEnum.SUCCESS });
+        return true;
+
+      case ActionsEnum.TOGGLE_MAIN_MENU:
+        toggleMainMenu(ctx);
         sendResponse({ status: ActionsEnum.SUCCESS });
         return true;
 
@@ -94,7 +95,11 @@ async function initPixelPerfect() {
 
     // Create React root and render app
     root = ReactDOM.createRoot(container);
-    root.render(<PixelPerfectApp />);
+    root.render(
+      <ReatomProvider value={ctx}>
+        <PixelPerfectApp />
+      </ReatomProvider>
+    );
   } catch (error) {
     console.error('Ошибка при инициализации Pixel Perfect:', error);
   }

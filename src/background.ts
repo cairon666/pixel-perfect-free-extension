@@ -1,8 +1,52 @@
-import { STORAGE_IMAGES_KEY } from './consts';
+import { STORAGE_IMAGES_KEY, ActionsEnum } from './consts';
 import { canUseExtensionOnPage } from './lib/canUseExtensionOnPage';
 
 chrome.runtime.onInstalled.addListener(() => {
   // Extension installed
+});
+
+// Обработчик клика на иконку расширения
+chrome.action.onClicked.addListener(async (tab) => {
+  if (!tab.id || !tab.url) {
+    return;
+  }
+
+  // Проверяем, можно ли использовать расширение на этой странице
+  if (!canUseExtensionOnPage(tab.url)) {
+    return;
+  }
+
+  try {
+    // Функция для внедрения content script и отправки сообщения
+    const ensureContentScriptAndSend = async () => {
+      try {
+        // Сначала попробуем ping
+        await chrome.tabs.sendMessage(tab.id!, { action: ActionsEnum.PING });
+      } catch (error) {
+        try {
+          // Внедряем content script
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id! },
+            files: ['src/content.js'],
+          });
+          // Ждём немного для инициализации
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (injectError) {
+          console.error('Failed to inject content script', injectError);
+          throw injectError;
+        }
+      }
+
+      // Отправляем сообщение для переключения главного меню
+      await chrome.tabs.sendMessage(tab.id!, {
+        action: ActionsEnum.TOGGLE_MAIN_MENU,
+      });
+    };
+
+    await ensureContentScriptAndSend();
+  } catch (error) {
+    console.error('Failed to open image panel', error);
+  }
 });
 
 // Функция для обновления состояния иконки
@@ -36,12 +80,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   // Если это сообщение об обновлении состояния изображения от content script
   if (request.action === 'updateImageState' && sender.tab) {
+    
     // Сохраняем состояние в chrome.storage
     chrome.storage.local.get([STORAGE_IMAGES_KEY], result => {
       const images = result[STORAGE_IMAGES_KEY] || [];
 
       const updated = images.map((img: any) => {
-        if (img.dataUrl === request.src) {
+        if (img.id === request.imageId) {
           return {
             ...img,
             position: request.position,
@@ -50,8 +95,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
         return img;
       });
-
-      chrome.storage.local.set({ [STORAGE_IMAGES_KEY]: updated });
     });
   }
 

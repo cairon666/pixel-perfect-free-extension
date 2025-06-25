@@ -1,16 +1,25 @@
 import React, { useState, useRef, useCallback } from 'react';
 
-import { cn } from '../lib/utils';
-import { useDragAndDrop } from './hooks/useDragAndDrop';
-import { useResize } from './hooks/useResize';
+import { cn } from '../../lib/utils';
+import { useDragAndDrop } from '../hooks/useDragAndDrop';
+import { useResize } from '../hooks/useResize';
 import { ResizeHandle } from './ResizeHandle';
-import { Toolbar } from './Toolbar';
 
 interface PixelPerfectOverlayProps {
   imageSrc: string;
   onClose: () => void;
   initialPosition?: { x: number; y: number };
   initialSize?: { width: number; height: number };
+  opacity: number;
+  onOpacityChange: (value: number) => void;
+  isLocked: boolean;
+  isDiffMode: boolean;
+  isCentered?: boolean;
+  position?: { x: number; y: number };
+  scale?: number;
+  onPositionChange?: (position: { x: number; y: number }) => void;
+  onScaleChange?: (scale: number) => void;
+  onImageStateUpdate?: (position: { x: number; y: number }, size: { width: number; height: number }) => void;
 }
 
 export function PixelPerfectOverlay({
@@ -18,44 +27,56 @@ export function PixelPerfectOverlay({
   onClose,
   initialPosition,
   initialSize,
+  opacity,
+  onOpacityChange,
+  isLocked,
+  isDiffMode,
+  isCentered,
+  position: externalPosition,
+  scale: externalScale,
+  onPositionChange,
+  onScaleChange,
+  onImageStateUpdate,
 }: PixelPerfectOverlayProps) {
-  const [opacity, setOpacity] = useState(50);
-  const [isLocked, setIsLocked] = useState(false);
-  const [isDiffMode, setIsDiffMode] = useState(false);
+
   const [diffType, setDiffType] = useState<'difference' | 'multiply' | 'overlay'>('difference');
-  const [position, setPosition] = useState(initialPosition || { x: 50, y: 50 });
+  const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
   const [size, setSize] = useState(initialSize || { width: 0, height: 0 });
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isInitialLoadRef = useRef(true);
+  const isInternalUpdateRef = useRef(false); // Флаг для отслеживания внутренних обновлений
 
-  // Функция для отправки обновлений состояния в popup
+  // Функция для отправки обновлений состояния через обработчик
   const sendStateUpdate = useCallback(() => {
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime
-        .sendMessage({
-          action: 'updateImageState',
-          src: imageSrc,
-          position,
-          size,
-        })
-        .catch(() => {
-          // Ignore messaging errors
-        });
+    if (onImageStateUpdate && size.width > 0 && size.height > 0) {
+      onImageStateUpdate(position, size);
     }
-  }, [imageSrc, position, size]);
+  }, [onImageStateUpdate, position, size]);
 
   // Обновляем состояние при изменении переданных пропсов
   React.useEffect(() => {
     if (initialPosition) {
       setPosition(initialPosition);
+    } else {
+      // Если начальная позиция не задана, используем { x: 0, y: 0 }
+      setPosition({ x: 0, y: 0 });
     }
     if (initialSize && initialSize.width > 0 && initialSize.height > 0) {
       setSize(initialSize);
     }
   }, [initialPosition, initialSize]);
+
+  // Только отправляем обновления позиции во внешний компонент (без обратной синхронизации)
+  React.useEffect(() => {
+    if (onPositionChange && imageLoaded) {
+      // Устанавливаем флаг внутреннего обновления перед отправкой
+      isInternalUpdateRef.current = true;
+      onPositionChange(position);
+    }
+  }, [position, onPositionChange, imageLoaded]);
 
   // Отправляем обновления состояния при изменении позиции или размера
   React.useEffect(() => {
@@ -65,12 +86,13 @@ export function PixelPerfectOverlay({
       return;
     }
 
-    // Отправляем обновления только если изображение загружено и имеет размеры
+    // Отправляем обновления сразу когда изображение загружено и имеет размеры
     if (imageLoaded && size.width > 0 && size.height > 0) {
-      const timeoutId = setTimeout(sendStateUpdate, 500); // Дебаунс для уменьшения количества сообщений
-      return () => clearTimeout(timeoutId);
+      sendStateUpdate();
     }
   }, [position, size, imageLoaded, sendStateUpdate]);
+
+
 
   // Custom hooks for drag and resize functionality
   const { isDragging, handleMouseDown: handleDragStart } = useDragAndDrop({
@@ -78,7 +100,25 @@ export function PixelPerfectOverlay({
     setPosition,
     disabled: isLocked,
     containerRef,
+    isCentered,
   });
+
+  // Применяем изменения позиции из внешних инпутов только когда не перетаскиваем
+  React.useEffect(() => {
+    if (externalPosition && !isDragging && !isInternalUpdateRef.current) {
+      // Проверяем с толерантностью ±2 пикселя для избежания циклических обновлений
+      const tolerance = 2;
+      const isSignificantlyDifferent = 
+        Math.abs(externalPosition.x - position.x) > tolerance ||
+        Math.abs(externalPosition.y - position.y) > tolerance;
+      
+      if (isSignificantlyDifferent) {
+        setPosition(externalPosition);
+      }
+    }
+    // Сбрасываем флаг после проверки
+    isInternalUpdateRef.current = false;
+  }, [externalPosition?.x, externalPosition?.y, isDragging, position.x, position.y]);
 
   const { handleResizeStart } = useResize({
     size,
@@ -146,6 +186,56 @@ export function PixelPerfectOverlay({
     [isLocked]
   );
 
+  // Слушаем события перемещения от MainMenu
+  React.useEffect(() => {
+    const handleMoveOverlay = (event: CustomEvent) => {
+      const { direction, isCentered } = event.detail;
+      
+      // В режиме центрирования блокируем горизонтальные движения
+      if (isCentered && (direction === 'left' || direction === 'right')) {
+        return;
+      }
+      
+      moveOverlay(direction);
+      
+      // При движении в режиме центрирования поддерживаем центрирование по X
+      if (isCentered && (direction === 'up' || direction === 'down')) {
+        const centerX = Math.round((window.innerWidth - size.width) / 2);
+        setPosition(prev => ({ ...prev, x: centerX }));
+      }
+    };
+
+    const handleCenterImage = (event: CustomEvent) => {
+      const { shouldCenter } = event.detail;
+      if (shouldCenter) {
+        // Центрируем изображение: середина изображения = середина экрана
+        // При transform: scale() с transform-origin: center, элемент масштабируется от своего центра
+        // Поэтому для центрирования нужно позиционировать центр элемента по центру экрана
+        const centerX = Math.round((window.innerWidth - size.width) / 2);
+        setPosition(prev => ({ ...prev, x: centerX }));
+      }
+    };
+
+    const handleMaintainCenter = () => {
+      if (isCentered) {
+        // Поддерживаем центрирование: середина изображения = середина экрана
+        // При transform: scale() с transform-origin: center, достаточно позиционировать центр элемента
+        const centerX = Math.round((window.innerWidth - size.width) / 2);
+        setPosition(prev => ({ ...prev, x: centerX }));
+      }
+    };
+
+    window.addEventListener('pixelPerfectMoveOverlay', handleMoveOverlay as EventListener);
+    window.addEventListener('pixelPerfectCenterImage', handleCenterImage as EventListener);
+    window.addEventListener('pixelPerfectMaintainCenter', handleMaintainCenter as EventListener);
+
+    return () => {
+      window.removeEventListener('pixelPerfectMoveOverlay', handleMoveOverlay as EventListener);
+      window.removeEventListener('pixelPerfectCenterImage', handleCenterImage as EventListener);
+      window.removeEventListener('pixelPerfectMaintainCenter', handleMaintainCenter as EventListener);
+    };
+      }, [moveOverlay, size.width, isCentered, isLocked]);
+
   return (
     <div className='fixed inset-0 w-screen h-screen pointer-events-none z-[999999]'>
       <div
@@ -169,6 +259,8 @@ export function PixelPerfectOverlay({
           opacity: opacity / 100,
           mixBlendMode: isDiffMode ? diffType : 'normal',
           backgroundColor: isDiffMode ? 'rgba(255,255,255,0.1)' : 'transparent',
+          transform: externalScale ? `scale(${externalScale})` : 'none',
+          transformOrigin: 'center center',
         }}
         role='dialog'
         aria-label='Pixel Perfect Overlay'
@@ -203,33 +295,6 @@ export function PixelPerfectOverlay({
           </>
         )}
       </div>
-
-      <Toolbar
-        opacity={opacity}
-        onOpacityChange={setOpacity}
-        isLocked={isLocked}
-        onToggleLock={() => setIsLocked(!isLocked)}
-        isDiffMode={isDiffMode}
-        onToggleDiff={() => {
-          const newDiffMode = !isDiffMode;
-          setIsDiffMode(newDiffMode);
-
-          // Переключаем тип эффекта для тестирования
-          if (newDiffMode) {
-            let nextType: 'difference' | 'multiply' | 'overlay';
-            if (diffType === 'difference') {
-              nextType = 'multiply';
-            } else if (diffType === 'multiply') {
-              nextType = 'overlay';
-            } else {
-              nextType = 'difference';
-            }
-            setDiffType(nextType);
-          }
-        }}
-        onClose={onClose}
-        onMove={moveOverlay}
-      />
     </div>
   );
 }

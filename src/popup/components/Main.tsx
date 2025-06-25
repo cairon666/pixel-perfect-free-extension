@@ -65,6 +65,7 @@ export function Main() {
 
   const showOverlay = (
     src: string,
+    imageId: string,
     position?: { x: number; y: number },
     size?: { width: number; height: number }
   ) => {
@@ -99,6 +100,7 @@ export function Main() {
           await chrome.tabs.sendMessage(tabId, {
             action: ActionsEnum.SHOW_OVERLAY,
             src,
+            imageId,
             position,
             size,
           });
@@ -121,7 +123,7 @@ export function Main() {
           reader.onload = () => {
             const dataUrl = reader.result as string;
             const newImg = addImageToStorage(dataUrl, 'Изображение из буфера');
-            showOverlay(newImg.dataUrl);
+            showOverlay(newImg.dataUrl, newImg.id, { x: 0, y: 0 });
           };
           reader.readAsDataURL(blob);
           break;
@@ -142,7 +144,7 @@ export function Main() {
     reader.onload = () => {
       const dataUrl = reader.result as string;
       const newImg = addImageToStorage(dataUrl, file.name);
-      showOverlay(newImg.dataUrl);
+      showOverlay(newImg.dataUrl, newImg.id, { x: 0, y: 0 });
     };
     reader.readAsDataURL(file);
 
@@ -151,13 +153,52 @@ export function Main() {
   };
 
   const handleSelect = (img: SavedImage) => {
-    showOverlay(img.dataUrl, img.position, img.size);
+    // Используем сохраненную позицию или { x: 0, y: 0 } для старых изображений без позиции
+    showOverlay(img.dataUrl, img.id, img.position || { x: 0, y: 0 }, img.size);
   };
 
   const handleDelete = (id: string) => {
     const updated = images.filter(img => img.id !== id);
     setImages(updated);
     persistImages(updated);
+  };
+
+  const openImagePanel = () => {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs: chrome.tabs.Tab[]) => {
+      const tabId = tabs[0]?.id;
+      if (!tabId) {
+        return;
+      }
+
+      chrome.tabs.get(tabId, async () => {
+        const ensureContentScriptAndSend = async () => {
+          try {
+            // Сначала попробуем ping
+            await chrome.tabs.sendMessage(tabId, { action: ActionsEnum.PING });
+          } catch (error) {
+            try {
+              // Внедряем content script
+              await chrome.scripting.executeScript({
+                target: { tabId },
+                files: ['src/content.js'],
+              });
+              // Ждём немного для инициализации
+              await new Promise(resolve => setTimeout(resolve, 200));
+            } catch (injectError) {
+              logError('Failed to inject content script', injectError);
+              throw injectError;
+            }
+          }
+
+          // Отправляем сообщение для открытия панели
+          await chrome.tabs.sendMessage(tabId, {
+            action: ActionsEnum.OPEN_IMAGE_PANEL,
+          });
+        };
+
+        ensureContentScriptAndSend().catch(error => logError('Failed to open image panel', error));
+      });
+    });
   };
 
   return (
@@ -170,6 +211,14 @@ export function Main() {
       </CardHeader>
 
       <CardContent className='space-y-4'>
+        {/* Open image panel button */}
+        <Button onClick={openImagePanel} size='sm' variant='default' className='w-full'>
+          <ImageIcon className='h-4 w-4 mr-2' />
+          Открыть панель изображений
+        </Button>
+
+        <Separator />
+
         {/* Upload buttons */}
         <div className='grid grid-cols-2 gap-2'>
           <Button onClick={handlePaste} size='sm' variant='outline'>

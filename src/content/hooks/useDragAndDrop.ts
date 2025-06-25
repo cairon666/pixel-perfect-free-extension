@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, RefObject } from 'react';
+import { useState, useCallback, useEffect, RefObject, useRef } from 'react';
 
 interface Position {
   x: number;
@@ -10,6 +10,7 @@ interface UseDragAndDropProps {
   setPosition: (position: Position) => void;
   disabled: boolean;
   containerRef: RefObject<HTMLDivElement>;
+  isCentered?: boolean;
 }
 
 interface UseDragAndDropReturn {
@@ -17,15 +18,35 @@ interface UseDragAndDropReturn {
   handleMouseDown: (e: React.MouseEvent) => void;
 }
 
+// Throttle функция для оптимизации
+const throttle = (func: Function, limit: number) => {
+  let inThrottle: boolean;
+  return function (this: any, ...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+};
+
 export const useDragAndDrop = ({
   position,
   setPosition,
   disabled,
   containerRef,
+  isCentered,
 }: UseDragAndDropProps): UseDragAndDropReturn => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  
+  // Используем useRef для хранения актуальных значений
+  const dragDataRef = useRef({
+    isDragging: false,
+    dragStart: { x: 0, y: 0 },
+    startPosition: { x: 0, y: 0 },
+  });
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -36,44 +57,78 @@ export const useDragAndDrop = ({
       if (target.style.cursor?.includes('resize')) return;
 
       e.preventDefault();
+      e.stopPropagation();
+      
+      const newDragStart = { x: e.clientX, y: e.clientY };
+      
       setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
+      setDragStart(newDragStart);
       setStartPosition(position);
+      
+      // Обновляем ref для использования в throttled функции
+      dragDataRef.current = {
+        isDragging: true,
+        dragStart: newDragStart,
+        startPosition: position,
+      };
     },
     [disabled, position, containerRef]
   );
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging || disabled) return;
+  // Throttled mousemove handler для плавности
+  const throttledMouseMove = useCallback(
+    throttle((e: MouseEvent) => {
+      if (!dragDataRef.current.isDragging || disabled) return;
 
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
+      const deltaX = e.clientX - dragDataRef.current.dragStart.x;
+      const deltaY = e.clientY - dragDataRef.current.dragStart.y;
+
+      // В режиме центрирования блокируем изменение X
+      let newX = dragDataRef.current.startPosition.x;
+      if (!isCentered) {
+        // Ограничиваем положение в пределах viewport
+        newX = Math.max(0, Math.min(window.innerWidth - 320, dragDataRef.current.startPosition.x + deltaX));
+      }
+      
+      const newY = Math.max(0, Math.min(window.innerHeight - 200, dragDataRef.current.startPosition.y + deltaY));
 
       setPosition({
-        x: startPosition.x + deltaX,
-        y: startPosition.y + deltaY,
+        x: newX,
+        y: newY,
       });
-    },
-    [isDragging, disabled, dragStart, startPosition, setPosition]
+    }, 16), // ~60fps
+    [disabled, setPosition, isCentered]
   );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
+    dragDataRef.current.isDragging = false;
   }, []);
 
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      // Используем passive listeners для лучшей производительности
+      document.addEventListener('mousemove', throttledMouseMove, { passive: true });
+      document.addEventListener('mouseup', handleMouseUp, { passive: true });
+      
+      // Предотвращаем выделение текста во время перетаскивания
+      document.body.style.userSelect = 'none';
+      document.body.style.pointerEvents = 'none';
+      
+      // Восстанавливаем pointer-events для нашего контейнера
+      if (containerRef.current) {
+        containerRef.current.style.pointerEvents = 'auto';
+      }
 
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mousemove', throttledMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.userSelect = '';
+        document.body.style.pointerEvents = '';
       };
     }
     return undefined;
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, throttledMouseMove, handleMouseUp, containerRef]);
 
   return {
     isDragging,

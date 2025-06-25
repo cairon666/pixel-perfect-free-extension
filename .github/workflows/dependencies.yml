@@ -1,0 +1,253 @@
+name: Dependencies Update
+
+on:
+  schedule:
+    # Каждую неделю в понедельник в 9:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Возможность запуска вручную
+
+jobs:
+  # Обновление зависимостей
+  update-dependencies:
+    name: 📦 Update Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Configure git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for outdated packages
+        id: outdated
+        run: |
+          # Проверяем устаревшие пакеты
+          OUTDATED=$(npm outdated --json || echo '{}')
+          echo "outdated_packages<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTDATED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Подсчитываем количество устаревших пакетов
+          COUNT=$(echo "$OUTDATED" | jq 'length' 2>/dev/null || echo 0)
+          echo "outdated_count=$COUNT" >> $GITHUB_OUTPUT
+
+      - name: Security audit
+        id: audit
+        run: |
+          # Запускаем audit и сохраняем результат
+          AUDIT_RESULT=$(npm audit --json || echo '{"vulnerabilities": {}}')
+          echo "audit_result<<EOF" >> $GITHUB_OUTPUT
+          echo "$AUDIT_RESULT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Подсчитываем уязвимости
+          HIGH_VULNS=$(echo "$AUDIT_RESULT" | jq '.metadata.vulnerabilities.high // 0' 2>/dev/null || echo 0)
+          CRITICAL_VULNS=$(echo "$AUDIT_RESULT" | jq '.metadata.vulnerabilities.critical // 0' 2>/dev/null || echo 0)
+          echo "high_vulnerabilities=$HIGH_VULNS" >> $GITHUB_OUTPUT
+          echo "critical_vulnerabilities=$CRITICAL_VULNS" >> $GITHUB_OUTPUT
+
+      - name: Create update branch
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          BRANCH_NAME="dependencies/update-$(date +%Y-%m-%d)"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Update minor and patch versions
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          # Обновляем только minor и patch версии для безопасности
+          npm update --save
+
+      - name: Fix security vulnerabilities
+        if: steps.audit.outputs.high_vulnerabilities > 0 || steps.audit.outputs.critical_vulnerabilities > 0
+        run: |
+          npm audit fix --audit-level=high --force || true
+
+      - name: Run tests after updates
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          npm test || {
+            echo "❌ Tests failed after dependency updates"
+            echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          }
+
+      - name: Check if build works
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          npm run build || {
+            echo "❌ Build failed after dependency updates"
+            echo "BUILD_FAILED=true" >> $GITHUB_ENV
+          }
+
+      - name: Generate update summary
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          echo "# 📦 Отчет об обновлении зависимостей" > UPDATE_SUMMARY.md
+          echo "" >> UPDATE_SUMMARY.md
+          echo "**Дата обновления**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> UPDATE_SUMMARY.md
+          echo "**Обновлено пакетов**: ${{ steps.outdated.outputs.outdated_count }}" >> UPDATE_SUMMARY.md
+          echo "" >> UPDATE_SUMMARY.md
+
+          if [ "${{ steps.audit.outputs.critical_vulnerabilities }}" -gt 0 ] || [ "${{ steps.audit.outputs.high_vulnerabilities }}" -gt 0 ]; then
+            echo "## 🚨 Исправлены уязвимости безопасности" >> UPDATE_SUMMARY.md
+            echo "- **Критические**: ${{ steps.audit.outputs.critical_vulnerabilities }}" >> UPDATE_SUMMARY.md
+            echo "- **Высокие**: ${{ steps.audit.outputs.high_vulnerabilities }}" >> UPDATE_SUMMARY.md
+            echo "" >> UPDATE_SUMMARY.md
+          fi
+
+          echo "## 📋 Обновленные пакеты" >> UPDATE_SUMMARY.md
+          echo "" >> UPDATE_SUMMARY.md
+          echo '```json' >> UPDATE_SUMMARY.md
+          echo '${{ steps.outdated.outputs.outdated_packages }}' | jq '.' >> UPDATE_SUMMARY.md 2>/dev/null || echo "Ошибка при форматировании списка пакетов" >> UPDATE_SUMMARY.md
+          echo '```' >> UPDATE_SUMMARY.md
+          echo "" >> UPDATE_SUMMARY.md
+
+          if [ "$TESTS_FAILED" = "true" ]; then
+            echo "## ❌ Внимание: тесты упали" >> UPDATE_SUMMARY.md
+            echo "Некоторые тесты не прошли после обновления зависимостей. Требуется ручная проверка." >> UPDATE_SUMMARY.md
+            echo "" >> UPDATE_SUMMARY.md
+          fi
+
+          if [ "$BUILD_FAILED" = "true" ]; then
+            echo "## ❌ Внимание: сборка упала" >> UPDATE_SUMMARY.md
+            echo "Сборка проекта не удалась после обновления зависимостей. Требуется ручное исправление." >> UPDATE_SUMMARY.md
+            echo "" >> UPDATE_SUMMARY.md
+          fi
+
+          echo "## ✅ Следующие шаги" >> UPDATE_SUMMARY.md
+          echo "1. Просмотрите изменения в этом PR" >> UPDATE_SUMMARY.md
+          echo "2. Протестируйте расширение локально" >> UPDATE_SUMMARY.md
+          echo "3. Убедитесь, что все функции работают корректно" >> UPDATE_SUMMARY.md
+          echo "4. При успешных тестах, merge этот PR" >> UPDATE_SUMMARY.md
+
+      - name: Commit changes
+        if: steps.outdated.outputs.outdated_count > 0
+        run: |
+          git add package.json package-lock.json
+
+          COMMIT_MSG="chore(deps): update dependencies"
+          if [ "${{ steps.audit.outputs.critical_vulnerabilities }}" -gt 0 ] || [ "${{ steps.audit.outputs.high_vulnerabilities }}" -gt 0 ]; then
+            COMMIT_MSG="$COMMIT_MSG and fix security vulnerabilities"
+          fi
+
+          git commit -m "$COMMIT_MSG
+
+          - Updated ${{ steps.outdated.outputs.outdated_count }} packages
+          - Fixed ${{ steps.audit.outputs.critical_vulnerabilities }} critical and ${{ steps.audit.outputs.high_vulnerabilities }} high vulnerabilities
+
+          Auto-generated by GitHub Actions"
+
+          git push origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        if: steps.outdated.outputs.outdated_count > 0
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ env.BRANCH_NAME }}
+          destination_branch: 'main'
+          pr_title: '📦 Обновление зависимостей (автоматическое)'
+          pr_body_path: 'UPDATE_SUMMARY.md'
+          pr_assignee: ${{ github.repository_owner }}
+          pr_label: 'dependencies,automated'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Еженедельная проверка безопасности
+  security-check:
+    name: 🔒 Weekly Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Security audit
+        run: |
+          echo "## 🔒 Еженедельная проверка безопасности" > SECURITY_REPORT.md
+          echo "" >> SECURITY_REPORT.md
+          echo "**Дата проверки**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> SECURITY_REPORT.md
+          echo "" >> SECURITY_REPORT.md
+
+          # Запускаем audit
+          if npm audit --audit-level=low > audit_output.txt 2>&1; then
+            echo "✅ **Результат**: Уязвимости не обнаружены" >> SECURITY_REPORT.md
+          else
+            echo "⚠️ **Результат**: Обнаружены потенциальные уязвимости" >> SECURITY_REPORT.md
+            echo "" >> SECURITY_REPORT.md
+            echo "### Детали:" >> SECURITY_REPORT.md
+            echo '```' >> SECURITY_REPORT.md
+            cat audit_output.txt >> SECURITY_REPORT.md
+            echo '```' >> SECURITY_REPORT.md
+          fi
+
+          echo "" >> SECURITY_REPORT.md
+          echo "### Рекомендации:" >> SECURITY_REPORT.md
+          echo "- Регулярно обновляйте зависимости" >> SECURITY_REPORT.md
+          echo "- Используйте npm audit fix для исправления уязвимостей" >> SECURITY_REPORT.md
+          echo "- Мониторьте GitHub Security Advisories" >> SECURITY_REPORT.md
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report-$(date +%Y-%m-%d)
+          path: SECURITY_REPORT.md
+          retention-days: 30
+
+      - name: Create issue for critical vulnerabilities
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚨 Обнаружены критические уязвимости безопасности';
+            const body = `
+            ## 🔒 Автоматическая проверка безопасности
+
+            **Дата**: ${new Date().toISOString()}
+
+            Во время еженедельной проверки безопасности были обнаружены критические уязвимости.
+
+            ### Действия:
+            1. Просмотрите отчет в артефактах этого workflow
+            2. Запустите \`npm audit\` локально для получения подробной информации
+            3. Выполните \`npm audit fix\` для автоматического исправления
+            4. Для сложных случаев обновите зависимости вручную
+
+            ### Автоматические действия:
+            - Этот issue будет автоматически закрыт при следующей успешной проверке
+            - Workflow обновления зависимостей попытается исправить уязвимости автоматически
+
+            ---
+            *Создано автоматически GitHub Actions*
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'automated', 'high-priority']
+            });
