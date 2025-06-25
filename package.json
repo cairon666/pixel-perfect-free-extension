@@ -28,8 +28,8 @@
     "copy:css": "cp dist/assets/popup-*.css dist/style.css",
     "preview": "vite preview",
     "analyze": "cross-env ANALYZE=true npm run build && open dist/popup-bundle-analysis.html && open dist/content-bundle-analysis.html",
-    "test": "vitest",
-    "test:watch": "vitest watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "---------------------------LINTING---------------------------": "",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
@@ -87,7 +87,7 @@
     "rollup-plugin-visualizer": "^6.0.3",
     "sass-embedded": "^1.89.2",
     "typescript": "^5.3.3",
-    "vite": "^5.1.0",
+    "vite": "^7.0.0",
     "vitest": "^0.34.6"
   }
 }

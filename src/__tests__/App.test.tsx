@@ -6,6 +6,6 @@ import { App } from '../popup/App';
 describe('App component', () => {
   it('renders heading', () => {
     render(<App />);
-    expect(screen.getByRole('heading', { name: /pixel perfect/i })).toBeDefined();
+    expect(screen.getByRole('heading', { name: /пиксель перфект/i })).toBeDefined();
   });
 });
