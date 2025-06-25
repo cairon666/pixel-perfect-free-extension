@@ -1,11 +1,13 @@
 # Pixel Perfect - Бесплатное расширение для браузера
 
-[![CI/CD](https://github.com/your-username/pixel-perfect-free-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/pixel-perfect-free-extension/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/cairon666/pixel-perfect-free-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/cairon666/pixel-perfect-free-extension/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Описание
 
 **Pixel Perfect** — современное браузерное расширение для веб-разработчиков, позволяющее в режиме реального времени сравнивать макеты дизайна с реализованными интерфейсами. Расширение помогает достичь pixel-perfect точности при верстке, значительно ускоряя процесс разработки и повышая качество пользовательских интерфейсов.
+
+![Демонстрация возможностей Pixel Perfect](./docs/демонстрация.gif)
 
 ## Актуальность и проблематика
 
@@ -38,7 +40,7 @@
 1. **Клонируйте репозиторий:**
 
    ```bash
-   git clone https://github.com/your-username/pixel-perfect-free-extension.git
+   git clone https://github.com/cairon666/pixel-perfect-free-extension
    cd pixel-perfect-free-extension
    ```
 
@@ -154,7 +156,7 @@ src/
 
 ```bash
 # Клонирование и установка
-git clone https://github.com/your-username/pixel-perfect-free-extension.git
+git clone https://github.com/cairon666/pixel-perfect-free-extension
 cd pixel-perfect-free-extension
 npm install
 
