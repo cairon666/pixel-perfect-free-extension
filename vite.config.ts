@@ -52,6 +52,7 @@ export default defineConfig(env =>
     defineConfig(() => {
       const isContentBuild = process.env.BUILD_TARGET === 'content';
       const isAnalyze = process.env.ANALYZE === 'true';
+      const isAnalyzeOpen = process.env.ANALYZE_OPEN === 'true';
 
       return {
         plugins: [
@@ -61,7 +62,7 @@ export default defineConfig(env =>
               filename: isContentBuild
                 ? 'dist/content-bundle-analysis.html'
                 : 'dist/popup-bundle-analysis.html',
-              open: false,
+              open: isAnalyzeOpen,
               gzipSize: true,
             }),
           !isContentBuild && copyManifest(),
