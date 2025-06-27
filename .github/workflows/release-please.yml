@@ -1,0 +1,81 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Run Release Please
+        uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: node
+          config-file: .release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build-and-release:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build production
+        run: npm run build
+
+      - name: Run security audit
+        run: npm audit --audit-level=high
+
+      - name: Create release packages
+        run: |
+          cd dist
+          zip -r ../pixel-perfect-extension-${{ needs.release-please.outputs.tag_name }}.zip ./*
+          cd ..
+
+          # Создание архива с исходным кодом для Chrome Web Store
+          zip -r pixel-perfect-extension-source-${{ needs.release-please.outputs.tag_name }}.zip \
+            src/ public/ *.json *.js *.ts *.md \
+            --exclude="*.log" --exclude="node_modules/*" --exclude="dist/*"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            pixel-perfect-extension-${{ needs.release-please.outputs.tag_name }}.zip
+            pixel-perfect-extension-source-${{ needs.release-please.outputs.tag_name }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ needs.release-please.outputs.tag_name }}
+          path: |
+            pixel-perfect-extension-${{ needs.release-please.outputs.tag_name }}.zip
+            pixel-perfect-extension-source-${{ needs.release-please.outputs.tag_name }}.zip
+          retention-days: 90

@@ -19,6 +19,6 @@
     "checkJs": false,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "tailwind.config.js", "postcss.config.js"],
+  "include": ["vite.config.ts", "tailwind.config.js", "postcss.config.js", "commitlint.config.js"],
   "exclude": ["dist", "node_modules", "src"]
 }
