@@ -23,13 +23,4 @@ pre-push:
 commit-msg:
   commands:
     commitlint:
-      run: |
-        # Simple commit message validation
-        if ! grep -qE "^(feat|fix|docs|style|refactor|test|chore)(\(.+\))?: .{1,50}" {1}; then
-          echo "❌ Invalid commit message format!"
-          echo "Expected: <type>(<scope>): <description>"
-          echo "Types: feat, fix, docs, style, refactor, test, chore"
-          echo "Example: feat(auth): add login functionality"
-          exit 1
-        fi
-        echo "✅ Commit message format is valid"
+      run: npx commitlint --edit {1}

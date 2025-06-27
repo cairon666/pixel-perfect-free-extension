@@ -1,0 +1,31 @@
+{
+  "release-type": "node",
+  "packages": {
+    ".": {
+      "changelog-sections": [
+        { "type": "feat", "section": "✨ Новые функции" },
+        { "type": "fix", "section": "🐛 Исправления ошибок" },
+        { "type": "perf", "section": "⚡ Улучшения производительности" },
+        { "type": "refactor", "section": "🔧 Рефакторинг кода" },
+        { "type": "docs", "section": "📚 Документация" },
+        { "type": "test", "section": "🧪 Тесты" },
+        { "type": "ci", "section": "🤖 CI/CD" },
+        { "type": "chore", "section": "🔨 Прочие изменения" },
+        { "type": "style", "section": "💄 Стили" },
+        { "type": "security", "section": "🔒 Безопасность" }
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "manifest.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  },
+  "changelog-path": "CHANGELOG.md",
+  "include-component-in-tag": false,
+  "tag-separator": "",
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "🚀 Release${component} ${version}"
+}
