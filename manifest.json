@@ -5,10 +5,16 @@
   "version": "0.0.1",
   "author": "Pixel Perfect Extension Team",
   "homepage_url": "https://github.com/cairon666/pixel-perfect-free-extension",
-  "permissions": ["activeTab", "clipboardRead", "scripting", "storage"],
+  "permissions": ["activeTab", "scripting", "storage", "unlimitedStorage"],
   "host_permissions": ["<all_urls>"],
   "action": {
-    "default_title": "Pixel Perfect"
+    "default_title": "Pixel Perfect",
+    "default_icon": {
+      "16": "icons/icon-16-gray.png",
+      "32": "icons/icon-32-gray.png",
+      "48": "icons/icon-48-gray.png",
+      "128": "icons/icon-128-gray.png"
+    }
   },
   "background": {
     "service_worker": "src/background.js",
@@ -27,7 +33,12 @@
       "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/**", "styles/**", "settings.html", "*.js.map"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   }

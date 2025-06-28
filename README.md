@@ -107,25 +107,6 @@ npm test
 - **Testing**: Vitest, Testing Library
 - **Code Quality**: ESLint, Prettier, Lefthook
 
-### Структура проекта
-
-```
-src/
-├── background.ts           # Service Worker
-├── content.tsx            # Content Script точка входа
-├── content/               # Content Script компоненты
-│   ├── PixelPerfectApp.tsx # Главный компонент
-│   ├── components/         # UI компоненты
-│   └── hooks/             # Пользовательские хуки
-├── popup/                 # Popup интерфейс
-│   ├── App.tsx
-│   └── components/
-├── store/                 # Управление состоянием (Reatom)
-│   ├── atoms.ts
-│   └── types.ts
-└── lib/                   # Утилиты и хелперы
-```
-
 ## Требования и ограничения
 
 ### Системные требования
@@ -175,7 +156,6 @@ npm run test:watch     # Тесты в watch режиме
 
 # Качество кода
 npm run lint           # Проверка ESLint
-npm run lint:fix       # Автофикс ESLint
 npm run format         # Форматирование Prettier
 npm run tsc            # Проверка TypeScript
 
