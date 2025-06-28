@@ -5,7 +5,6 @@ export const useOnStorageChange = (
 ) => {
   const listenerRef = useRef(listener);
 
-  // Обновляем ref при изменении listener
   listenerRef.current = listener;
 
   useEffect(() => {

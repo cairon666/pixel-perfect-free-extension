@@ -16,7 +16,7 @@
     "sourceMap": false,
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
     "jsx": "react-jsx",
-    "types": ["vitest/globals", "chrome"],
+    "types": ["vitest/globals", "chrome", "./src/env.d.ts"],
     "baseUrl": "./",
     "composite": true,
     "outDir": "./dist-types/web"
