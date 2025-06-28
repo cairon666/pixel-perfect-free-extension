@@ -2,14 +2,17 @@ import { cn } from 'src/lib/utils';
 
 interface DrugButtonProps {
   handleMouseDown: (e: React.MouseEvent) => void;
+  handleTouchStart: (e: React.TouchEvent) => void;
   isDragging: boolean;
 }
-export function DrugButton({ handleMouseDown, isDragging }: DrugButtonProps) {
+export function DrugButton({ handleMouseDown, handleTouchStart, isDragging }: DrugButtonProps) {
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       className={cn(
-        'absolute -top-2 -right-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-white cursor-grab hover:bg-gray-500 shadow-lg',
+        'absolute -top-2 -right-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-white cursor-grab hover:bg-gray-500 shadow-lg touch-none',
         {
           'cursor-grabbing bg-gray-500': isDragging,
         }

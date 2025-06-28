@@ -1,4 +1,5 @@
-import { cn } from 'src/lib/utils';
+import { useAtom, useAction } from '@reatom/npm-react';
+import { memo } from 'react';
 import {
   FiImage,
   FiFolder,
@@ -9,34 +10,41 @@ import {
   FiSearch,
   FiBarChart,
 } from 'react-icons/fi';
+import { cn } from 'src/lib/utils';
+import {
+  opacityAtom,
+  isLockedAtom,
+  isDiffModeAtom,
+  isImagePanelVisibleAtom,
+  setDiffModeAction,
+  setLockedAction,
+  toggleOpacityAction,
+  setImagePanelVisibleAction,
+} from 'src/store';
 
-interface MenuButtonsProps {
-  onToggleImagePanel: () => void;
-  isImagePanelVisible: boolean;
-  onToggleOpacity: () => void;
-  opacity: number;
-  onToggleLock: () => void;
-  isLocked: boolean;
-  onToggleDiff: () => void;
-  isDiffMode: boolean;
-}
-export function MenuButtons({
-  onToggleImagePanel,
-  isImagePanelVisible,
-  onToggleOpacity,
-  opacity,
-  onToggleLock,
-  isLocked,
-  onToggleDiff,
-  isDiffMode,
-}: MenuButtonsProps) {
+export const MenuButtons = memo(() => {
+  const [opacity] = useAtom(opacityAtom);
+  const [isLocked] = useAtom(isLockedAtom);
+  const [isDiffMode] = useAtom(isDiffModeAtom);
+  const [isImagePanelVisible] = useAtom(isImagePanelVisibleAtom);
+
+  const setDiffMode = useAction(setDiffModeAction);
+  const setLocked = useAction(setLockedAction);
+  const onToggleOpacity = useAction(toggleOpacityAction);
+  const setImagePanelVisible = useAction(setImagePanelVisibleAction);
+
+  const onToggleDiff = () => setDiffMode(!isDiffMode);
+  const onToggleLock = () => setLocked(!isLocked);
+  const onToggleImagePanel = () => setImagePanelVisible(!isImagePanelVisible);
+
   return (
     <div className='p-2 flex gap-1'>
       {/* Кнопка меню добавления картинки */}
       <button
+        type='button'
         onClick={onToggleImagePanel}
         className={cn(
-          'cursor-pointer w-12 h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
           {
             'bg-green-100 text-green-800 border-green-300 shadow-md': isImagePanelVisible,
             'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isImagePanelVisible,
@@ -53,9 +61,10 @@ export function MenuButtons({
 
       {/* Кнопка глаз для opacity */}
       <button
+        type='button'
         onClick={onToggleOpacity}
         className={cn(
-          'cursor-pointer w-12 h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
           {
             'bg-orange-100 text-orange-800 border-orange-300 shadow-md': opacity === 0,
             'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': opacity !== 0,
@@ -68,9 +77,10 @@ export function MenuButtons({
 
       {/* Кнопка замок для движения */}
       <button
+        type='button'
         onClick={onToggleLock}
         className={cn(
-          'cursor-pointer w-12 h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
           {
             'bg-red-100 text-red-800 border-red-300 shadow-md': isLocked,
             'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isLocked,
@@ -83,9 +93,10 @@ export function MenuButtons({
 
       {/* Кнопка режима различий */}
       <button
+        type='button'
         onClick={onToggleDiff}
         className={cn(
-          'cursor-pointer w-12 h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
           {
             'bg-purple-100 text-purple-800 border-purple-300 shadow-md': isDiffMode,
             'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isDiffMode,
@@ -97,4 +108,6 @@ export function MenuButtons({
       </button>
     </div>
   );
-}
+});
+
+MenuButtons.displayName = 'MenuButtons';
