@@ -3,5 +3,10 @@ export const logError = (...message: any[]) => {
 };
 
 export const logInfo = (...message: any[]) => {
+  // eslint-disable-next-line no-console
   console.log(`[PixelPerfect]: ${message.join(' ')}`);
+};
+
+export const logWarn = (...message: any[]) => {
+  console.warn(`[PixelPerfect]: ${message.join(' ')}`);
 };

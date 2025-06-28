@@ -49,6 +49,9 @@ const config = {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'react/require-default-props': 'off',
     'jsx-a11y/heading-has-content': 'off',
+    '@typescript-eslint/no-shadow': 'off',
+    'no-restricted-syntax': 'off',
+    'react/destructuring-assignment': 'off',
   },
   overrides: [
     {
@@ -64,4 +67,4 @@ const config = {
   ],
 };
 
-module.exports = config; 
+module.exports = config;

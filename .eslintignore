@@ -9,7 +9,6 @@ node_modules/
 
 # Generated files
 *.min.js
-*.d.ts
 
 # Configuration files that might have different format requirements
 vite.config.ts.timestamp-*
