@@ -1,4 +1,4 @@
-import { checkPageAccessibility } from './checkPageAccessibility';
+import { checkPageAccessibility } from '../checkPageAccessibility';
 
 export const canUseExtensionOnPage = (url?: string): boolean => {
   if (!url) {

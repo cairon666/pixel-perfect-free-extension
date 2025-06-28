@@ -1,4 +1,4 @@
-import { logWarn } from './logger';
+import { logWarn } from '../logger';
 
 // Типы для области хранения
 export type ChromeStorageArea = 'local' | 'sync' | 'session';
