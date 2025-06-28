@@ -1,103 +1,117 @@
-import { STORAGE_IMAGES_KEY, ActionsEnum } from './consts';
-import { canUseExtensionOnPage } from './lib/canUseExtensionOnPage';
+import { ActionsEnum } from './consts';
+import { canUseExtension } from './lib/canUseExtension';
+import { getCurrentActiveTab } from './lib/getCurrentActiveTab';
+import { setGrayscaleIcons, setColorIcons } from './lib/icons';
+import { logError } from './lib/logger';
+
+const updateIconState = async (tabId: number, url?: string, status?: string) => {
+  const isCanUse = await canUseExtension(tabId, status, url);
+
+  const onError = async () => {
+    await setGrayscaleIcons(tabId);
+    await chrome.action.setTitle({
+      tabId,
+      title: 'Pixel Perfect - Недоступно на этой странице',
+    });
+  };
+
+  try {
+    if (isCanUse) {
+      await setColorIcons(tabId);
+      await chrome.action.setTitle({
+        tabId,
+        title: 'Pixel Perfect - Нажмите для открытия',
+      });
+    } else {
+      await onError();
+    }
+  } catch (error) {
+    await onError();
+  }
+};
+
+const onInitExtension = async () => {
+  try {
+    const activeTab = await getCurrentActiveTab();
+
+    if (activeTab?.url && activeTab?.id) {
+      await setGrayscaleIcons(activeTab.id);
+      await updateIconState(activeTab.id, activeTab.url, activeTab.status);
+    }
+  } catch (error) {
+    logError('Failed to initialize extension state:', error);
+  }
+};
+
+const ensureContentScriptAndSend = async (tabId: number) => {
+  try {
+    // Сначала попробуем ping
+    await chrome.tabs.sendMessage(tabId, { action: ActionsEnum.PING });
+  } catch (error) {
+    try {
+      // Внедряем content script
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['src/content.js'],
+      });
+    } catch (injectError) {
+      logError('Failed to inject content script', injectError);
+      throw injectError;
+    }
+  }
+
+  await chrome.tabs.sendMessage(tabId, {
+    action: ActionsEnum.TOGGLE_MAIN_MENU,
+  });
+};
 
 chrome.runtime.onInstalled.addListener(() => {
-  // Extension installed
+  onInitExtension();
 });
 
-// Обработчик клика на иконку расширения
-chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab.id || !tab.url) {
+chrome.runtime.onStartup.addListener(() => {
+  onInitExtension();
+});
+
+chrome.action.onClicked.addListener(async tab => {
+  if (!tab.id) {
     return;
   }
 
-  // Проверяем, можно ли использовать расширение на этой странице
-  if (!canUseExtensionOnPage(tab.url)) {
+  const isCanUse = await canUseExtension(tab.id, tab.status, tab.url);
+
+  if (!isCanUse) {
     return;
   }
 
   try {
-    // Функция для внедрения content script и отправки сообщения
-    const ensureContentScriptAndSend = async () => {
-      try {
-        // Сначала попробуем ping
-        await chrome.tabs.sendMessage(tab.id!, { action: ActionsEnum.PING });
-      } catch (error) {
-        try {
-          // Внедряем content script
-          await chrome.scripting.executeScript({
-            target: { tabId: tab.id! },
-            files: ['src/content.js'],
-          });
-          // Ждём немного для инициализации
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (injectError) {
-          console.error('Failed to inject content script', injectError);
-          throw injectError;
-        }
-      }
-
-      // Отправляем сообщение для переключения главного меню
-      await chrome.tabs.sendMessage(tab.id!, {
-        action: ActionsEnum.TOGGLE_MAIN_MENU,
-      });
-    };
-
-    await ensureContentScriptAndSend();
+    await ensureContentScriptAndSend(tab.id);
   } catch (error) {
-    console.error('Failed to open image panel', error);
+    logError('Failed to open menu', error);
   }
 });
 
-// Функция для обновления состояния иконки
-const updateIconState = (tabId: number, url: string) => {
-  const canUse = canUseExtensionOnPage(url);
-
-  if (canUse) {
-    chrome.action.enable(tabId);
-  } else {
-    chrome.action.disable(tabId);
-  }
-};
-
-// Слушатель изменения активной вкладки
-chrome.tabs.onActivated.addListener(activeInfo => {
-  chrome.tabs.get(activeInfo.tabId, tab => {
+chrome.tabs.onActivated.addListener(async activeInfo => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
     if (tab.url) {
-      updateIconState(activeInfo.tabId, tab.url);
+      await updateIconState(activeInfo.tabId, tab.url, tab.status);
     }
-  });
-});
-
-// Слушатель обновления вкладки
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url && tab.url) {
-    updateIconState(tabId, tab.url);
+  } catch (error) {
+    logError('Failed to update icon on tab activation:', error);
   }
 });
 
-// Обработчик сообщений между content script и popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // Если это сообщение об обновлении состояния изображения от content script
-  if (request.action === 'updateImageState' && sender.tab) {
-    
-    // Сохраняем состояние в chrome.storage
-    chrome.storage.local.get([STORAGE_IMAGES_KEY], result => {
-      const images = result[STORAGE_IMAGES_KEY] || [];
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  try {
+    const status = changeInfo.status || tab.status;
 
-      const updated = images.map((img: any) => {
-        if (img.id === request.imageId) {
-          return {
-            ...img,
-            position: request.position,
-            size: request.size,
-          };
-        }
-        return img;
-      });
-    });
+    if (changeInfo.url) {
+      await updateIconState(tabId, tab.url, 'loading');
+    } else if (changeInfo.status) {
+      await updateIconState(tabId, tab.url, status);
+    }
+  } catch (error) {
+    logError('Failed to update icon on tab update:', error);
   }
-
-  sendResponse();
-  return true;
 });
