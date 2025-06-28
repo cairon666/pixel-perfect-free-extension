@@ -1,14 +1,5 @@
 import { useState, useCallback, useEffect, RefObject } from 'react';
-
-interface Position {
-  x: number;
-  y: number;
-}
-
-interface Size {
-  width: number;
-  height: number;
-}
+import { Position, Size } from 'src/store';
 
 type ResizeDirection = 'topLeft' | 'topRight' | 'bottomRight' | 'bottomLeft';
 
@@ -24,6 +15,7 @@ interface UseResizeProps {
 interface UseResizeReturn {
   isResizing: boolean;
   handleResizeStart: (e: React.MouseEvent, direction: ResizeDirection) => void;
+  handleTouchResizeStart: (e: React.TouchEvent, direction: ResizeDirection) => void;
 }
 
 export const useResize = ({
@@ -40,15 +32,12 @@ export const useResize = ({
   const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>('bottomRight');
 
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent, direction: ResizeDirection) => {
+  const startResize = useCallback(
+    (clientX: number, clientY: number, direction: ResizeDirection) => {
       if (disabled) return;
 
-      e.preventDefault();
-      e.stopPropagation();
-
       setIsResizing(true);
-      setResizeStart({ x: e.clientX, y: e.clientY });
+      setResizeStart({ x: clientX, y: clientY });
       setStartSize(size);
       setStartPosition(position);
       setResizeDirection(direction);
@@ -56,12 +45,33 @@ export const useResize = ({
     [disabled, size, position]
   );
 
-  const handleResizeMove = useCallback(
-    (e: MouseEvent) => {
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent, direction: ResizeDirection) => {
+      e.preventDefault();
+      e.stopPropagation();
+      startResize(e.clientX, e.clientY, direction);
+    },
+    [startResize]
+  );
+
+  const handleTouchResizeStart = useCallback(
+    (e: React.TouchEvent, direction: ResizeDirection) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const touch = e.touches[0];
+      if (touch) {
+        startResize(touch.clientX, touch.clientY, direction);
+      }
+    },
+    [startResize]
+  );
+
+  const handleMove = useCallback(
+    (clientX: number, clientY: number) => {
       if (!isResizing || disabled || !imgRef.current) return;
 
-      const deltaX = e.clientX - resizeStart.x;
-      const deltaY = e.clientY - resizeStart.y;
+      const deltaX = clientX - resizeStart.x;
+      const deltaY = clientY - resizeStart.y;
 
       // Calculate original image aspect ratio
       const aspectRatio = imgRef.current.naturalWidth / imgRef.current.naturalHeight;
@@ -135,25 +145,65 @@ export const useResize = ({
     ]
   );
 
+  const handleResizeMove = useCallback(
+    (e: MouseEvent) => {
+      e.preventDefault();
+      handleMove(e.clientX, e.clientY);
+    },
+    [handleMove]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touch) {
+        handleMove(touch.clientX, touch.clientY);
+      }
+    },
+    [handleMove]
+  );
+
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
   }, []);
 
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMove);
-      document.addEventListener('mouseup', handleResizeEnd);
+      // Mouse события
+      document.addEventListener('mousemove', handleResizeMove, { capture: true });
+      document.addEventListener('mouseup', handleResizeEnd, { passive: true });
+
+      // Touch события
+      document.addEventListener('touchmove', handleTouchMove, { capture: true });
+      document.addEventListener('touchend', handleResizeEnd, { passive: true });
+      document.addEventListener('touchcancel', handleResizeEnd, { passive: true });
+
+      // Предотвращаем выделение и скролл
+      document.body.style.userSelect = 'none';
+      document.body.style.touchAction = 'none';
 
       return () => {
-        document.removeEventListener('mousemove', handleResizeMove);
+        // Убираем mouse события
+        document.removeEventListener('mousemove', handleResizeMove, { capture: true });
         document.removeEventListener('mouseup', handleResizeEnd);
+
+        // Убираем touch события
+        document.removeEventListener('touchmove', handleTouchMove, { capture: true });
+        document.removeEventListener('touchend', handleResizeEnd);
+        document.removeEventListener('touchcancel', handleResizeEnd);
+
+        // Восстанавливаем стили
+        document.body.style.userSelect = '';
+        document.body.style.touchAction = '';
       };
     }
     return undefined;
-  }, [isResizing, handleResizeMove, handleResizeEnd]);
+  }, [isResizing, handleResizeMove, handleTouchMove, handleResizeEnd]);
 
   return {
     isResizing,
     handleResizeStart,
+    handleTouchResizeStart,
   };
 };
