@@ -78,3 +78,11 @@ key.pem
 # Misc
 *.tgz
 *.tar.gz 
+
+/tests-examples/
+/playwright-report/
+/test-results/
+/playwright/.cache/
+/.local-browsers
+/allure-results/
+/.allure/

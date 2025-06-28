@@ -103,3 +103,9 @@ if (typeof chrome !== 'undefined' && chrome.runtime) {
     }
   });
 }
+
+if (import.meta.env.VITE_ENABLE_BROWSER_API_ENABLE_EXTENSION === 'true') {
+  (window as any).initPixelPerfect = initPixelPerfect;
+  (window as any).destroyPixelPerfect = destroyPixelPerfect;
+  (window as any).togglePixelPerfectMenu = () => toggleMainMenuAction(ctx);
+}

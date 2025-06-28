@@ -151,8 +151,10 @@ npm run build           # Продакшн сборка
 npm run build:dev       # Девелопмент сборка
 
 # Тестирование
-npm test               # Запуск тестов
-npm run test:watch     # Тесты в watch режиме
+npm test
+npm run test:watch
+npm run test:e2e
+npm run test:e2e:ui
 
 # Качество кода
 npm run lint           # Проверка ESLint
@@ -161,6 +163,25 @@ npm run tsc            # Проверка TypeScript
 
 # Анализ бандла
 npm run analyze        # Анализ размера бандла
+```
+
+### Тестирование
+
+Проект использует многоуровневое тестирование для обеспечения качества:
+
+#### Unit тесты (Vitest)
+
+```bash
+npm test              # Запуск всех юнит-тестов
+npm run test:watch    # Тесты в watch режиме с hot reload
+```
+
+#### E2E тесты (Playwright)
+
+```bash
+npm run test:e2e      # Запуск e2e тестов
+npm run test:e2e:ui   # E2E тесты с визуальным интерфейсом
+npm run test:e2e:debug # Отладка e2e тестов
 ```
 
 ## Инструкция пользователя

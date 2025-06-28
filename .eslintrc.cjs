@@ -7,7 +7,7 @@ const config = {
     'prettier',
   ],
   parserOptions: {
-    project: ['./tsconfig.web.json', './tsconfig.node.json'],
+    project: ['./tsconfig.web.json', './tsconfig.node.json', './tsconfig.e2e.json'],
   },
   plugins: ['perfectionist'],
   rules: {
@@ -63,6 +63,12 @@ const config = {
       rules: {
         'no-console': 'off',
         'import/no-extraneous-dependencies': 'off',
+      },
+    },
+    {
+      files: ['e2e/**/*.ts', 'playwright.config.ts'],
+      rules: {
+        'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
       },
     },
   ],

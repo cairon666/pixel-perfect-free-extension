@@ -38,6 +38,7 @@ export function Menu() {
 
   return (
     <div
+      data-testid='ppe-menu'
       ref={menuRef}
       className={cn(
         'fixed bg-white border-2 border-gray-300 rounded-lg shadow-2xl pointer-events-auto font-sans',
