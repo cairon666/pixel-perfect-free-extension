@@ -1,8 +1,9 @@
 import react from '@vitejs/plugin-react';
 import { copyFileSync } from 'fs';
-import { resolve } from 'path';
+import path, { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, mergeConfig } from 'vite';
+import checker from 'vite-plugin-checker';
 
 // Plugin to copy manifest.json
 const copyManifest = () => ({
@@ -13,7 +14,7 @@ const copyManifest = () => ({
 });
 
 const baseConfig = defineConfig(() => {
-  const isMinify = process.env.MINIFY ? process.env.MINIFY === 'true' : true;
+  const isMinify = process.env.MINIFY ? process.env.MINIFY === 'false' : true;
   const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST;
   const preactAlias: Record<string, string> = isTest
     ? {}
@@ -28,7 +29,14 @@ const baseConfig = defineConfig(() => {
       target: 'es2020',
       outDir: 'dist',
     },
-    plugins: [react()],
+    plugins: [
+      react(),
+      checker({
+        typescript: {
+          tsconfigPath: path.resolve(__dirname, 'tsconfig.web.json'),
+        },
+      }),
+    ],
     resolve: {
       alias: {
         src: resolve(__dirname, 'src'),
@@ -86,7 +94,6 @@ export default defineConfig(env =>
               }
             : {
                 input: {
-                  popup: resolve(__dirname, 'index.html'),
                   background: resolve(__dirname, 'src/background.ts'),
                 },
                 output: {
