@@ -1,5 +1,5 @@
-import { cn } from 'src/lib/utils';
 import { FiArrowUp, FiArrowDown, FiArrowLeft, FiArrowRight, FiTarget } from 'react-icons/fi';
+import { cn } from 'src/lib/utils';
 import { MoveDirection } from 'src/store';
 
 interface ControlButtonsProps {

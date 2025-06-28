@@ -2,54 +2,17 @@ import ReactDOM from 'react-dom/client';
 
 import { ActionsEnum } from './consts';
 import { PixelPerfectApp } from './content/PixelPerfectApp';
-import { ReatomProvider, ctx, showOverlay, hideOverlay, setMainMenuVisible, toggleMainMenu } from './store';
-import tailwindStyles from './styles/globals.css?inline';
+import { logError } from './lib/logger';
+import { ctx, toggleMainMenuAction } from './store';
+import styles from './styles/globals.css?inline';
 
 let root: ReactDOM.Root | null = null;
 let shadowHost: HTMLDivElement | null = null;
-
-// Глобальный обработчик сообщений (работает всегда)
-if (typeof chrome !== 'undefined' && chrome.runtime) {
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    switch (request.action) {
-      case ActionsEnum.PING:
-        sendResponse({ status: ActionsEnum.PONG });
-        return true;
-
-      case ActionsEnum.SHOW_OVERLAY:
-        if (request.src && request.imageId) {
-          showOverlay(ctx, request.src, request.imageId, request.position, request.size);
-        }
-        sendResponse({ status: ActionsEnum.SUCCESS });
-        return true;
-
-      case ActionsEnum.HIDE_OVERLAY:
-        hideOverlay(ctx);
-        sendResponse({ status: ActionsEnum.SUCCESS });
-        return true;
-
-      case ActionsEnum.OPEN_IMAGE_PANEL:
-        setMainMenuVisible(ctx, true);
-        sendResponse({ status: ActionsEnum.SUCCESS });
-        return true;
-
-      case ActionsEnum.TOGGLE_MAIN_MENU:
-        toggleMainMenu(ctx);
-        sendResponse({ status: ActionsEnum.SUCCESS });
-        return true;
-
-      default:
-        sendResponse({ status: ActionsEnum.UNKNOWN_ACTION });
-        return true;
-    }
-  });
-}
 
 async function initPixelPerfect() {
   if (root) return;
 
   try {
-    // Ждем готовности DOM
     if (document.readyState === 'loading') {
       await new Promise(resolve => {
         document.addEventListener('DOMContentLoaded', resolve);
@@ -87,7 +50,7 @@ async function initPixelPerfect() {
 
     // Create style element with bundled Tailwind CSS
     const styleElement = document.createElement('style');
-    styleElement.textContent = tailwindStyles;
+    styleElement.textContent = styles;
 
     // Append styles and container to shadow root
     shadowRoot.appendChild(styleElement);
@@ -95,13 +58,9 @@ async function initPixelPerfect() {
 
     // Create React root and render app
     root = ReactDOM.createRoot(container);
-    root.render(
-      <ReatomProvider value={ctx}>
-        <PixelPerfectApp />
-      </ReatomProvider>
-    );
+    root.render(<PixelPerfectApp />);
   } catch (error) {
-    console.error('Ошибка при инициализации Pixel Perfect:', error);
+    logError('Ошибка при инициализации:', error);
   }
 }
 
@@ -118,7 +77,7 @@ function destroyPixelPerfect() {
       shadowHost = null;
     }
   } catch (error) {
-    console.error('Ошибка при удалении Pixel Perfect:', error);
+    logError('Ошибка при удалении:', error);
   }
 }
 
@@ -133,3 +92,14 @@ if (document.readyState === 'loading') {
 
 // Clean up when page unloads
 window.addEventListener('beforeunload', destroyPixelPerfect);
+
+// Глобальный обработчик сообщений
+if (typeof chrome !== 'undefined' && chrome.runtime) {
+  chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
+    if (request.action === ActionsEnum.TOGGLE_MAIN_MENU) {
+      toggleMainMenuAction(ctx);
+    } else if (request.action === ActionsEnum.PING) {
+      sendResponse({ status: ActionsEnum.PONG });
+    }
+  });
+}

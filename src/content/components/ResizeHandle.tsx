@@ -7,9 +7,10 @@ type ResizePosition = 'topLeft' | 'topRight' | 'bottomRight' | 'bottomLeft';
 interface ResizeHandleProps {
   position: ResizePosition;
   onMouseDown: (e: React.MouseEvent) => void;
+  onTouchStart: (e: React.TouchEvent) => void;
 }
 
-export function ResizeHandle({ position, onMouseDown }: ResizeHandleProps) {
+export function ResizeHandle({ position, onMouseDown, onTouchStart }: ResizeHandleProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const getPositionClasses = (pos: ResizePosition): string => {
@@ -45,7 +46,7 @@ export function ResizeHandle({ position, onMouseDown }: ResizeHandleProps) {
   return (
     <div
       className={cn(
-        'absolute w-3 h-3 bg-blue-500 border-2 border-white rounded-full pointer-events-auto transition-all duration-200 ease-in-out shadow-lg',
+        'absolute w-3 h-3 bg-blue-500 border-2 border-white rounded-full pointer-events-auto transition-all duration-200 ease-in-out shadow-lg touch-none',
         getPositionClasses(position),
         getCursorClass(position),
         {
@@ -57,6 +58,7 @@ export function ResizeHandle({ position, onMouseDown }: ResizeHandleProps) {
       tabIndex={0}
       aria-label={`Resize handle ${position}`}
       onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     />
