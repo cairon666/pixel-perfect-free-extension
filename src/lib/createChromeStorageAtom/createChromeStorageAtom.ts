@@ -1,8 +1,8 @@
 import { atom, Ctx } from '@reatom/core';
 import { onUpdate } from '@reatom/hooks';
 
-import { ChromeStorageArea } from './chromeStorage';
-import { logWarn } from './logger';
+import { ChromeStorageArea } from '../chromeStorage';
+import { logWarn } from '../logger';
 
 export const createChromeStorageAtom = <T>(
   key: string,

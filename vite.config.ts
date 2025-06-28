@@ -50,6 +50,9 @@ const baseConfig = defineConfig(() => {
       environment: 'jsdom',
       globals: true,
       setupFiles: ['src/__tests__/setup.ts'],
+      coverage: {
+        provider: 'v8',
+      },
     },
   };
 });

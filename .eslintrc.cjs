@@ -52,6 +52,7 @@ const config = {
     '@typescript-eslint/no-shadow': 'off',
     'no-restricted-syntax': 'off',
     'react/destructuring-assignment': 'off',
+    'no-promise-executor-return': 'off',
   },
   overrides: [
     {
