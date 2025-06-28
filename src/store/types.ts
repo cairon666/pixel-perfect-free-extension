@@ -1,4 +1,5 @@
-// Типы для store
+import { UUID } from 'crypto';
+
 export interface Position {
   x: number;
   y: number;
@@ -10,12 +11,11 @@ export interface Size {
 }
 
 export interface SavedImage {
-  id: string;
+  id: UUID;
   dataUrl: string;
   created: number;
-  name?: string;
-  position?: Position;
-  size?: Size;
+  position: Position;
+  size: Size;
 }
 
 // Движение overlay
