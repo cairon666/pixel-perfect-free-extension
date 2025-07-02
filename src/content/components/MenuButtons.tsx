@@ -41,6 +41,7 @@ export const MenuButtons = memo(() => {
     <div className='p-2 flex gap-1'>
       {/* Кнопка меню добавления картинки */}
       <button
+        data-testid='ppe-toggle-image-panel'
         type='button'
         onClick={onToggleImagePanel}
         className={cn(
@@ -96,7 +97,7 @@ export const MenuButtons = memo(() => {
         type='button'
         onClick={onToggleDiff}
         className={cn(
-          'cursor-h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
           {
             'bg-purple-100 text-purple-800 border-purple-300 shadow-md': isDiffMode,
             'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isDiffMode,

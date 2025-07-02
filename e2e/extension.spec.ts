@@ -1,62 +1,65 @@
-import { test, expect } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { expect } from '@playwright/test';
 
-// eslint-disable-next-line no-underscore-dangle, @typescript-eslint/naming-convention
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const testPagePath = path.join(__dirname, 'fixtures', 'test-page.html');
+import { test } from './fixtures/chrome-runtime-mock';
+import { clickElementByTestId } from './utils/clickElementByTestId';
+import { defaultOptionsSreenshot } from './utils/consts';
+import { copyImageToClipboard } from './utils/copyImageToClipboard';
+import { elementIsExists } from './utils/elementIsExists';
+import { ElementsIds, toDataTesId } from './utils/ELEMENTS_IDS';
+import { openMenu } from './utils/openMenu';
+import { startExtension } from './utils/startExtension';
+import { waitForFonts } from './utils/waitForFonts';
 
-test.describe('Pixel Perfect Extension', () => {
-  test('should show menu when extension is activated', async ({ page }) => {
-    // Переходим на локальную тестовую страницу
-    await page.goto(`file://${testPagePath}`);
+test('should show open menu when extension is activated', async ({ page, backgroundScript }) => {
+  await startExtension(page);
+  await openMenu(page, backgroundScript);
 
-    // Ждем полной загрузки страницы
-    await page.waitForLoadState('networkidle');
+  await waitForFonts(page);
+  await expect(page).toHaveScreenshot('image-panel-opened.png', defaultOptionsSreenshot);
+});
 
-    // Даем время на инициализацию content script
-    await page.waitForTimeout(2000);
+test('should show open menu with settings', async ({ page, backgroundScript }) => {
+  await startExtension(page);
+  await openMenu(page, backgroundScript);
 
-    // Принудительно инжектируем content script если его нет
-    const hasExtensionHost = await page.evaluate(() => {
-      return !!document.getElementById('pixel-perfect-shadow-host');
-    });
+  expect(await elementIsExists(page, toDataTesId(ElementsIds.ImagePanel))).toBe(false);
 
-    if (!hasExtensionHost) {
-      await page.addScriptTag({ path: './dist/src/content.js' });
-      await page.waitForTimeout(3000);
-    }
+  await clickElementByTestId(page, ElementsIds.ToggleImagePanelButton);
+  await page.waitForTimeout(500);
 
-    // Проверяем, что расширение инициализировалось
-    const extensionInitialized = await page.evaluate(() => {
-      const shadowHost = document.getElementById('pixel-perfect-shadow-host');
-      return !!shadowHost;
-    });
+  expect(await elementIsExists(page, toDataTesId(ElementsIds.ImagePanel))).toBe(true);
 
-    expect(extensionInitialized).toBe(true);
+  await waitForFonts(page);
+  await expect(page).toHaveScreenshot(
+    'image-panel-opened-with-settings.png',
+    defaultOptionsSreenshot
+  );
+});
 
-    // Активируем меню через глобальную функцию
-    await page.evaluate(() => {
-      if ((window as any).togglePixelPerfectMenu) {
-        (window as any).togglePixelPerfectMenu();
-      } else {
-        // Fallback: используем событие
-        document.dispatchEvent(new CustomEvent('pixelPerfectToggle'));
-      }
-    });
+test('should insert image from clipboard after opening image panel', async ({
+  page,
+  backgroundScript,
+}) => {
+  await startExtension(page);
+  await openMenu(page, backgroundScript);
 
-    await page.waitForTimeout(1000);
+  expect(await elementIsExists(page, toDataTesId(ElementsIds.ImagePanel))).toBe(false);
 
-    // Проверяем наличие меню в shadow DOM
-    const menuExists = await page.evaluate(() => {
-      const shadowHost = document.getElementById('pixel-perfect-shadow-host');
-      if (shadowHost && shadowHost.shadowRoot) {
-        const menu = shadowHost.shadowRoot.querySelector('[data-testid="ppe-menu"]');
-        return !!menu;
-      }
-      return false;
-    });
+  await clickElementByTestId(page, ElementsIds.ToggleImagePanelButton);
+  await page.waitForTimeout(500);
 
-    expect(menuExists).toBe(true);
-  });
+  expect(await elementIsExists(page, toDataTesId(ElementsIds.ImagePanel))).toBe(true);
+
+  // Добавляем тестовое изображение в буфер обмена
+  await copyImageToClipboard(page, 'test-image.png');
+
+  // Нажимаем кнопку вставки изображения из буфера обмена
+  await clickElementByTestId(page, ElementsIds.InsertImageByCopyButton);
+  await page.waitForTimeout(2000);
+
+  // Проверяем, что изображение было добавлено в overlay
+  expect(await elementIsExists(page, toDataTesId(ElementsIds.OverlayImage))).toBe(true);
+
+  await waitForFonts(page);
+  await expect(page).toHaveScreenshot('image-inserted-from-clipboard.png', defaultOptionsSreenshot);
 });

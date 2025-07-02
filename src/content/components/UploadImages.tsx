@@ -74,6 +74,7 @@ export const UploadImages = memo(() => {
       <button
         type='button'
         onClick={handlePaste}
+        data-testid='ppe-insert-image-by-copy-button'
         className='px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors flex items-center gap-2'
       >
         <FiClipboard size={16} />
