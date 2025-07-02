@@ -58,7 +58,10 @@ export function Overlay() {
   }
 
   return (
-    <div className='fixed inset-0 w-screen h-screen pointer-events-none z-[999999]'>
+    <div
+      data-testid='ppe-image-overlay'
+      className='fixed inset-0 w-screen h-screen pointer-events-none z-[999999]'
+    >
       <div
         ref={containerRef}
         className={cn(

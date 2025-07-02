@@ -14,7 +14,7 @@
     "declarationMap": true,
     "sourceMap": false,
     "lib": ["DOM", "DOM.Iterable", "ES2020"],
-    "types": ["node"],
+    "types": ["node", "chrome"],
     "allowJs": true,
     "checkJs": false,
     "noEmit": true

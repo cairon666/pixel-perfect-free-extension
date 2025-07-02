@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  playwright-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    volumes:
+      # Монтируем результаты тестов
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+      # Монтируем скриншоты для обновления
+      - ./e2e/__screenshots__:/app/e2e/__screenshots__
+    environment:
+      # Переменные среды для стабильности
+      - CI=true
+      - PLAYWRIGHT_HTML_REPORT=/app/playwright-report
+    shm_size: 2gb
+    # Для UI режима (опционально)
+    # ports:
+    #   - "9323:9323"
+    command: npm run test:e2e

@@ -1,0 +1,29 @@
+# Зависимости
+node_modules/
+npm-debug.log*
+
+# Результаты тестов
+test-results/
+playwright-report/
+
+# Сборка
+dist/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Прочее
+.DS_Store
+*.env
+*.env.local 

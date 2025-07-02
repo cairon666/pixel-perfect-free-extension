@@ -1,0 +1,23 @@
+FROM mcr.microsoft.com/playwright:v1.53.1-jammy
+
+# Устанавливаем Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs
+
+# Создаем рабочую директорию
+WORKDIR /app
+
+# Копируем package файлы
+COPY package*.json ./
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем остальные файлы
+COPY . .
+
+# Собираем расширение
+RUN npm run build
+
+# Команда по умолчанию для запуска тестов
+CMD ["npm", "run", "test:e2e"] 

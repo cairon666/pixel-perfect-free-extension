@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react';
 import { copyFileSync } from 'fs';
 import path, { resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { defineConfig, mergeConfig, loadEnv } from 'vite';
+import { defineConfig, mergeConfig } from 'vite';
 import checker from 'vite-plugin-checker';
 
 // Plugin to copy manifest.json
@@ -13,9 +13,8 @@ const copyManifest = () => ({
   },
 });
 
-const baseConfig = defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd());
-  const isMinify = env.VITE_MINIFY === 'true';
+const baseConfig = defineConfig(() => {
+  const isMinify = process.env.MINIFY !== 'false';
   const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST;
   const preactAlias: Record<string, string> = isTest
     ? {}

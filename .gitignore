@@ -86,3 +86,16 @@ key.pem
 /.local-browsers
 /allure-results/
 /.allure/
+
+# E2E Screenshots (временные скриншоты)
+/e2e/screenshots/*.png
+!/e2e/screenshots/.gitkeep
+
+# Visual regression test results
+*-actual.png
+*-diff.png
+# Эталонные изображения должны попасть в git
+# /e2e/*-expected.png
+
+
+.cursor

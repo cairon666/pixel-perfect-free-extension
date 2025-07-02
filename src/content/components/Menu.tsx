@@ -64,7 +64,10 @@ export function Menu() {
       <CloseButton />
       <MenuButtons />
       {isImagePanelVisible && (
-        <div className='border-t border-gray-200 p-3 space-y-3 bg-gray-50'>
+        <div
+          data-testid='ppe-image-panel'
+          className='border-t border-gray-200 p-3 space-y-3 bg-gray-50'
+        >
           <SettingsImage />
           <UploadImages />
           <Images />

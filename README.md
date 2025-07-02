@@ -179,9 +179,10 @@ npm run test:watch    # Тесты в watch режиме с hot reload
 #### E2E тесты (Playwright)
 
 ```bash
-npm run test:e2e      # Запуск e2e тестов
-npm run test:e2e:ui   # E2E тесты с визуальным интерфейсом
-npm run test:e2e:debug # Отладка e2e тестов
+npm run test:e2e        # Запуск e2e тестов
+npm run test:e2e:update # Обновление скриншотных e2e тестов
+npm run test:e2e:ui     # E2E тесты с визуальным интерфейсом
+npm run test:e2e:debug  # Отладка e2e тестов
 ```
 
 ## Инструкция пользователя
