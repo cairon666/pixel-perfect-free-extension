@@ -1,9 +1,11 @@
 import { useAtom } from '@reatom/npm-react';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { isImagePanelVisibleAtom, isMainMenuVisibleAtom } from 'src/store';
+import { isImagePanelVisibleAtom, isMainMenuVisibleAtom, Position } from 'src/store';
+import { useEventListener } from 'usehooks-ts';
 
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
 import { cn } from '../../lib/utils';
+import { MENU_WIDTH, MENU_PADDING } from '../consts';
 import { CloseButton } from './CloseButton';
 import { DrugButton } from './DrugButton';
 import { Images } from './Images';
@@ -13,14 +15,25 @@ import { UploadImages } from './UploadImages';
 
 export function Menu() {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [menuPosition, setMenuPosition] = useState({
+    x: 0,
+    y: 0,
+    xRightSticky: false,
+  });
 
   const [isImagePanelVisible] = useAtom(isImagePanelVisibleAtom);
   const [isMainMenuVisible] = useAtom(isMainMenuVisibleAtom);
 
+  const handleDragMenu = (position: Position) => {
+    const windowWidth = window.innerWidth;
+    const xRightSticky = position.x + MENU_WIDTH + MENU_PADDING >= windowWidth;
+
+    setMenuPosition({ x: position.x, y: position.y, xRightSticky });
+  };
+
   const { isDragging, handleMouseDown, handleTouchStart } = useDragAndDrop({
     position: menuPosition,
-    setPosition: setMenuPosition,
+    setPosition: handleDragMenu,
     disabled: false,
     containerRef: menuRef,
   });
@@ -28,9 +41,24 @@ export function Menu() {
   useLayoutEffect(() => {
     if (isMainMenuVisible) {
       const menuRects = menuRef.current?.getBoundingClientRect()!;
-      setMenuPosition({ x: window.innerWidth - menuRects.width - 20, y: 10 });
+      setMenuPosition({
+        x: window.innerWidth - menuRects.width - MENU_PADDING,
+        y: 10,
+        xRightSticky: true,
+      });
     }
   }, [isMainMenuVisible]);
+
+  useEventListener('resize', () => {
+    if (!menuRef.current || !isMainMenuVisible || !menuPosition.xRightSticky) return;
+
+    const windowWidth = window.innerWidth;
+    setMenuPosition({
+      x: windowWidth - MENU_WIDTH - MENU_PADDING,
+      y: menuPosition.y,
+      xRightSticky: true,
+    });
+  });
 
   if (!isMainMenuVisible) {
     return null;
@@ -49,7 +77,7 @@ export function Menu() {
       style={{
         top: `${menuPosition.y}px`,
         left: `${menuPosition.x}px`,
-        width: '254px',
+        width: `${MENU_WIDTH}px`,
         zIndex: 9999999,
         transform: isDragging ? 'translateZ(0)' : 'none',
         willChange: isDragging ? 'transform' : 'auto',
