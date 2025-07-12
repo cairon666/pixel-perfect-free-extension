@@ -1,3 +1,4 @@
+import { noop } from 'lodash-es';
 import { useState, useCallback, useEffect, RefObject, useRef } from 'react';
 import { Position } from 'src/store';
 
@@ -7,6 +8,7 @@ interface UseDragAndDropProps {
   disabled: boolean;
   containerRef: RefObject<HTMLDivElement>;
   isCentered?: boolean;
+  allowOutsideViewport?: boolean;
 }
 
 export const useDragAndDrop = ({
@@ -15,6 +17,7 @@ export const useDragAndDrop = ({
   disabled,
   containerRef,
   isCentered,
+  allowOutsideViewport = false, // По умолчанию false для обратной совместимости
 }: UseDragAndDropProps) => {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -77,31 +80,51 @@ export const useDragAndDrop = ({
       const deltaX = clientX - dragDataRef.current.dragStart.x;
       const deltaY = clientY - dragDataRef.current.dragStart.y;
 
-      // Получаем актуальные размеры элемента
-      const containerElement = containerRef.current;
-      if (!containerElement) return;
-
-      const containerWidth = containerElement.offsetWidth;
-      const containerHeight = containerElement.offsetHeight;
-
-      // Получаем актуальные размеры viewport с учетом DevTools
-      // visualViewport API лучше работает с DevTools, чем window.inner*
-      const viewportWidth = window.visualViewport?.width || window.innerWidth;
-      const viewportHeight = window.visualViewport?.height || window.innerHeight;
-
       // В режиме центрирования блокируем изменение X
       let newX = dragDataRef.current.startPosition.x;
       if (!isCentered) {
-        // Ограничиваем положение в пределах viewport с небольшим отступом
-        const minX = 0;
-        const maxX = Math.max(0, viewportWidth - containerWidth);
-        newX = Math.max(minX, Math.min(maxX, dragDataRef.current.startPosition.x + deltaX));
+        if (allowOutsideViewport) {
+          // Разрешаем свободное перемещение без ограничений
+          newX = dragDataRef.current.startPosition.x + deltaX;
+        } else {
+          // Получаем актуальные размеры элемента
+          const containerElement = containerRef.current;
+          if (containerElement) {
+            const containerWidth = containerElement.offsetWidth;
+
+            // Получаем актуальные размеры viewport с учетом DevTools
+            const viewportWidth = window.visualViewport?.width || window.innerWidth;
+
+            // Ограничиваем положение в пределах viewport
+            const minX = 0;
+            const maxX = Math.max(0, viewportWidth - containerWidth);
+            newX = Math.max(minX, Math.min(maxX, dragDataRef.current.startPosition.x + deltaX));
+          } else {
+            newX = dragDataRef.current.startPosition.x + deltaX;
+          }
+        }
       }
 
-      // Ограничиваем по Y с учетом актуального viewport
-      const minY = 0;
-      const maxY = Math.max(0, viewportHeight - containerHeight);
-      const newY = Math.max(minY, Math.min(maxY, dragDataRef.current.startPosition.y + deltaY));
+      // Обрабатываем Y координату
+      let newY;
+      if (allowOutsideViewport) {
+        // Разрешаем свободное перемещение по Y без ограничений
+        newY = dragDataRef.current.startPosition.y + deltaY;
+      } else {
+        // Получаем актуальные размеры элемента
+        const containerElement = containerRef.current;
+        if (containerElement) {
+          const containerHeight = containerElement.offsetHeight;
+          const viewportHeight = window.visualViewport?.height || window.innerHeight;
+
+          // Ограничиваем по Y с учетом актуального viewport
+          const minY = 0;
+          const maxY = Math.max(0, viewportHeight - containerHeight);
+          newY = Math.max(minY, Math.min(maxY, dragDataRef.current.startPosition.y + deltaY));
+        } else {
+          newY = dragDataRef.current.startPosition.y + deltaY;
+        }
+      }
 
       setPosition({
         x: newX,
@@ -109,7 +132,7 @@ export const useDragAndDrop = ({
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [disabled, isCentered, setPosition]
+    [disabled, isCentered, setPosition, allowOutsideViewport]
   );
 
   // Mouse events
@@ -143,8 +166,10 @@ export const useDragAndDrop = ({
     dragDataRef.current.isDragging = false;
   }, []);
 
-  // Дополнительный эффект для обработки изменения размеров viewport в responsive режиме
+  // Эффект для обработки изменения размеров viewport
   useEffect(() => {
+    if (allowOutsideViewport) return noop; // Не применяем ограничения если разрешен выход за пределы
+
     const handleViewportChange = () => {
       // При изменении viewport проверяем, не вышел ли элемент за границы
       const containerElement = containerRef.current;
@@ -192,7 +217,7 @@ export const useDragAndDrop = ({
       }
       window.removeEventListener('resize', handleViewportChange);
     };
-  }, [position, setPosition, isCentered, containerRef]);
+  }, [position, setPosition, isCentered, containerRef, allowOutsideViewport]);
 
   useEffect(() => {
     if (isDragging) {

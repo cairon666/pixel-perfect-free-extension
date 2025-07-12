@@ -42,6 +42,7 @@ export function Overlay() {
     disabled: isLocked,
     containerRef,
     isCentered,
+    allowOutsideViewport: true, // Разрешаем картинке выходить за пределы экрана
   });
 
   const { handleResizeStart, handleTouchResizeStart } = useResize({
