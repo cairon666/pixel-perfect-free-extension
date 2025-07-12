@@ -75,7 +75,7 @@ export const UploadImages = memo(() => {
         type='button'
         onClick={handlePaste}
         data-testid='ppe-insert-image-by-copy-button'
-        className='px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors flex items-center gap-2'
+        className='px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 transition-colors flex items-center gap-2 cursor-pointer'
       >
         <FiClipboard size={16} />
         Вставить
@@ -83,7 +83,7 @@ export const UploadImages = memo(() => {
       <button
         type='button'
         onClick={handleFileUpload}
-        className='px-3 py-2 text-sm bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 transition-colors flex items-center gap-2'
+        className='px-3 py-2 text-sm bg-green-50 text-green-700 border border-green-200 rounded hover:bg-green-100 transition-colors flex items-center gap-2 cursor-pointer'
       >
         <FiUpload size={16} />
         Загрузить

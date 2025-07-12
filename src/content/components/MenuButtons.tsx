@@ -1,15 +1,8 @@
 import { useAtom, useAction } from '@reatom/npm-react';
 import { memo } from 'react';
-import {
-  FiImage,
-  FiFolder,
-  FiEye,
-  FiEyeOff,
-  FiLock,
-  FiUnlock,
-  FiSearch,
-  FiBarChart,
-} from 'react-icons/fi';
+import { AiOutlineMinus, AiOutlinePlus } from 'react-icons/ai';
+import { FiEye, FiEyeOff, FiLock, FiUnlock } from 'react-icons/fi';
+import { TbLayersDifference } from 'react-icons/tb';
 import { cn } from 'src/lib/utils';
 import {
   opacityAtom,
@@ -38,17 +31,17 @@ export const MenuButtons = memo(() => {
   const onToggleImagePanel = () => setImagePanelVisible(!isImagePanelVisible);
 
   return (
-    <div className='p-2 flex gap-1'>
+    <div className='flex'>
       {/* Кнопка меню добавления картинки */}
       <button
         data-testid='ppe-toggle-image-panel'
         type='button'
         onClick={onToggleImagePanel}
         className={cn(
-          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg transition-all duration-200 border-2 w-full',
           {
-            'bg-green-100 text-green-800 border-green-300 shadow-md': isImagePanelVisible,
-            'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isImagePanelVisible,
+            'bg-green-100 text-green-800 border-green-300': isImagePanelVisible,
+            'hover:bg-gray-100': !isImagePanelVisible,
           }
         )}
         title={
@@ -57,7 +50,7 @@ export const MenuButtons = memo(() => {
             : 'Открыть меню добавления картинки'
         }
       >
-        {isImagePanelVisible ? <FiFolder size={18} /> : <FiImage size={18} />}
+        {isImagePanelVisible ? <AiOutlineMinus size={18} /> : <AiOutlinePlus size={18} />}
       </button>
 
       {/* Кнопка глаз для opacity */}
@@ -65,10 +58,10 @@ export const MenuButtons = memo(() => {
         type='button'
         onClick={onToggleOpacity}
         className={cn(
-          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg transition-all duration-200 border-2 w-full',
           {
-            'bg-orange-100 text-orange-800 border-orange-300 shadow-md': opacity === 0,
-            'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': opacity !== 0,
+            'bg-orange-100 text-orange-800 border-orange-300': opacity === 0,
+            'hover:bg-gray-100': opacity !== 0,
           }
         )}
         title={opacity === 0 ? 'Показать изображение' : 'Скрыть изображение'}
@@ -81,10 +74,10 @@ export const MenuButtons = memo(() => {
         type='button'
         onClick={onToggleLock}
         className={cn(
-          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg transition-all duration-200 border-2 w-full',
           {
-            'bg-red-100 text-red-800 border-red-300 shadow-md': isLocked,
-            'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isLocked,
+            'bg-red-100 text-red-800 border-red-300': isLocked,
+            'hover:bg-gray-100': !isLocked,
           }
         )}
         title={isLocked ? 'Разблокировать движение' : 'Заблокировать движение'}
@@ -97,15 +90,15 @@ export const MenuButtons = memo(() => {
         type='button'
         onClick={onToggleDiff}
         className={cn(
-          'cursor-pointer h-12 flex items-center justify-center text-lg rounded-lg transition-all duration-200 border-2 w-full',
+          'cursor-pointer h-12 flex items-center justify-center text-lg transition-all duration-200 border-2 w-full',
           {
-            'bg-purple-100 text-purple-800 border-purple-300 shadow-md': isDiffMode,
-            'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !isDiffMode,
+            'bg-purple-100 text-purple-800 border-purple-300': isDiffMode,
+            'hover:bg-gray-100': !isDiffMode,
           }
         )}
         title={isDiffMode ? 'Отключить режим различий' : 'Включить режим различий'}
       >
-        {isDiffMode ? <FiSearch size={18} /> : <FiBarChart size={18} />}
+        <TbLayersDifference size={18} />
       </button>
     </div>
   );

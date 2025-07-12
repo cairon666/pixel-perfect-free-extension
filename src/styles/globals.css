@@ -1,6 +1,55 @@
 @import 'tailwindcss';
 
-@theme {
+@layer utilities {
+  #pixel-perfect-root .rounded {
+    border-radius: 4px;
+  }
+}
+
+#pixel-perfect-root {
+  font-size: 16px;
+  line-height: 1.5;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji';
+
+  all: initial;
+
+  box-sizing: border-box;
+
+  display: block;
+  position: static;
+
+  animation: none;
+  transition: none;
+  transform: none;
+
+  --spacing: 4px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+  --text-base: 16px;
+  --text-base--line-height: 24px;
+  --text-lg: 18px;
+  --text-lg--line-height: 28px;
+  --text-xl: 20px;
+  --text-xl--line-height: 28px;
+  --text-2xl: 24px;
+  --text-2xl--line-height: 32px;
+
   --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-card: #ffffff;
@@ -20,11 +69,27 @@
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
   --color-ring: #3b82f6;
-  --radius: 0.5rem;
+  --radius-none: 0px;
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-full: 9999px;
+
+  --tw-shadow: 0 0 0 0 transparent;
+  --tw-shadow-color: rgba(0, 0, 0, 0.1);
+  --tw-shadow-colored: 0 0 0 0 transparent;
+  --tw-inset-shadow: 0 0 0 0 transparent;
+  --tw-inset-ring-shadow: 0 0 0 0 transparent;
+  --tw-ring-offset-shadow: 0 0 0 0 transparent;
+  --tw-ring-shadow: 0 0 0 0 transparent;
 }
 
 @media (prefers-color-scheme: dark) {
-  @theme {
+  #pixel-perfect-root {
     --color-background: #020617;
     --color-foreground: #f8fafc;
     --color-card: #020617;
@@ -44,5 +109,7 @@
     --color-border: #1e293b;
     --color-input: #1e293b;
     --color-ring: #94a3b8;
+
+    --tw-shadow-color: rgba(0, 0, 0, 0.3);
   }
 }
