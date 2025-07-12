@@ -35,7 +35,7 @@ export const Images = memo(() => {
               <img
                 src={img.dataUrl}
                 alt='Saved screenshot'
-                className='w-6 h-6 object-cover rounded border cursor-pointer hover:opacity-80'
+                className='w-6 h-6 object-cover rounded border hover:opacity-80'
               />
               <div className='flex-1 min-w-0'>
                 <p className='text-xs text-gray-500'>
@@ -45,7 +45,7 @@ export const Images = memo(() => {
               <button
                 type='button'
                 onClick={() => handleSelect(img)}
-                className='px-1 py-0.5 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100'
+                className='cursor-pointer px-1 py-0.5 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100'
               >
                 Показать
               </button>

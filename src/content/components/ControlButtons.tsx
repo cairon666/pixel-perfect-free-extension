@@ -31,7 +31,7 @@ export function ControlButtons({
           )}
           style={{
             top: '0px',
-            left: '2.1rem',
+            left: '33px',
             border: '1px solid black',
           }}
           disabled={isLocked}
@@ -52,7 +52,7 @@ export function ControlButtons({
             }
           )}
           style={{
-            top: '2.1rem',
+            top: '34px',
             left: '0px',
             border: '1px solid black',
           }}
@@ -76,8 +76,8 @@ export function ControlButtons({
             }
           )}
           style={{
-            top: '2.1rem',
-            left: '2.1rem',
+            top: '34px',
+            left: '33px',
             border: '1px solid black',
           }}
           disabled={isLocked}
@@ -98,8 +98,8 @@ export function ControlButtons({
             }
           )}
           style={{
-            top: '2.1rem',
-            left: '4.2rem',
+            top: '34px',
+            left: '66px',
             border: '1px solid black',
           }}
           disabled={isLocked || isCentered}
@@ -121,7 +121,7 @@ export function ControlButtons({
           )}
           style={{
             bottom: '0px',
-            left: '2.1rem',
+            left: '33px',
             border: '1px solid black',
           }}
           disabled={isLocked}

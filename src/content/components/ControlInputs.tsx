@@ -26,7 +26,7 @@ export function ControlInputs({
         type='button'
         onClick={handleReset}
         disabled={isLocked}
-        className='absolute -top-1 -right-1 p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10'
+        className='cursor-pointer absolute -top-1 -right-1 p-1 text-gray-700 bg-gray-200 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed z-10'
         title={isLocked ? 'Заблокировано!' : 'Сбросить позицию к 0, 0'}
       >
         <FiRotateCcw size={12} />

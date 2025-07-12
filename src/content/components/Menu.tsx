@@ -41,8 +41,7 @@ export function Menu() {
       data-testid='ppe-menu'
       ref={menuRef}
       className={cn(
-        'fixed bg-white border-2 border-gray-300 rounded-lg shadow-2xl pointer-events-auto font-sans',
-        'backdrop-blur-sm',
+        'inset-shadow-2xs fixed bg-white border-2 border-gray-300 rounded-lg shadow-2xl pointer-events-auto font-sans text-black',
         {
           'cursor-grabbing': isDragging,
         }
@@ -66,7 +65,7 @@ export function Menu() {
       {isImagePanelVisible && (
         <div
           data-testid='ppe-image-panel'
-          className='border-t border-gray-200 p-3 space-y-3 bg-gray-50'
+          className='border-t border-gray-200 p-3 space-y-3 bg-gray-50 rounded-b-lg'
         >
           <SettingsImage />
           <UploadImages />

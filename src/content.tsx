@@ -46,7 +46,7 @@ async function initPixelPerfect() {
     const container = document.createElement('div');
     container.id = 'pixel-perfect-root';
     container.style.cssText =
-      'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999;';
+      'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 999999; font-size: 16px; line-height: 1.5; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;';
 
     // Create style element with bundled Tailwind CSS
     const styleElement = document.createElement('style');
