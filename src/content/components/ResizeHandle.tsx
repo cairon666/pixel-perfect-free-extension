@@ -8,9 +8,15 @@ interface ResizeHandleProps {
   position: ResizePosition;
   onMouseDown: (e: React.MouseEvent) => void;
   onTouchStart: (e: React.TouchEvent) => void;
+  'data-testid'?: string;
 }
 
-export function ResizeHandle({ position, onMouseDown, onTouchStart }: ResizeHandleProps) {
+export function ResizeHandle({
+  position,
+  onMouseDown,
+  onTouchStart,
+  'data-testid': testId,
+}: ResizeHandleProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const getPositionClasses = (pos: ResizePosition): string => {
@@ -57,6 +63,7 @@ export function ResizeHandle({ position, onMouseDown, onTouchStart }: ResizeHand
       role='button'
       tabIndex={0}
       aria-label={`Resize handle ${position}`}
+      data-testid={testId}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
       onMouseEnter={() => setIsHovered(true)}
