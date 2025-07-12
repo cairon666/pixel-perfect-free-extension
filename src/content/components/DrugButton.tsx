@@ -23,6 +23,7 @@ export function DrugButton({ handleMouseDown, handleTouchStart, isDragging }: Dr
           ? 'radial-gradient(circle, #374151 30%, #1f2937 70%)'
           : 'radial-gradient(circle, #4b5563 30%, #374151 70%)',
       }}
+      data-testid='ppe-drag-button'
     >
       <div className='w-1.5 h-1.5 bg-white rounded-full absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2' />
     </div>

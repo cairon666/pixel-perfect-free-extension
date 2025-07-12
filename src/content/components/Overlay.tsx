@@ -65,6 +65,7 @@ export function Overlay() {
     >
       <div
         ref={containerRef}
+        data-testid='ppe-overlay-container'
         className={cn(
           'absolute border-2 rounded pointer-events-auto select-none min-w-[50px] min-h-[50px] touch-none',
           {
@@ -105,21 +106,25 @@ export function Overlay() {
         {!isLocked && (
           <>
             <ResizeHandle
+              data-testid='ppe-resize-handle-top-left'
               position='topLeft'
               onMouseDown={e => handleResizeStart(e, 'topLeft')}
               onTouchStart={e => handleTouchResizeStart(e, 'topLeft')}
             />
             <ResizeHandle
+              data-testid='ppe-resize-handle-top-right'
               position='topRight'
               onMouseDown={e => handleResizeStart(e, 'topRight')}
               onTouchStart={e => handleTouchResizeStart(e, 'topRight')}
             />
             <ResizeHandle
+              data-testid='ppe-resize-handle-bottom-right'
               position='bottomRight'
               onMouseDown={e => handleResizeStart(e, 'bottomRight')}
               onTouchStart={e => handleTouchResizeStart(e, 'bottomRight')}
             />
             <ResizeHandle
+              data-testid='ppe-resize-handle-bottom-left'
               position='bottomLeft'
               onMouseDown={e => handleResizeStart(e, 'bottomLeft')}
               onTouchStart={e => handleTouchResizeStart(e, 'bottomLeft')}
